@@ -81,7 +81,8 @@ unsigned int reports = 0;
 #include <I2Cdev.h>
 
 #include <helper_3dmath.h>
-extern "C" {
+extern "C"
+{
 #include <inv_mpu.h>
 #include <inv_mpu_dmp_motion_driver.h>
 }
@@ -151,28 +152,28 @@ boolean blinkState;
 
 TrackState_t joySt;
 
-/* The mounting matrix below tells the MPL how to rotate the raw
- * data from the driver(s).
- */
-
+// The mounting matrix below tells the MPL how to rotate the raw
+// data from the driver(s).
 static byte gyro_orients[4] =
 {
-  B10001000, // Z Up X Forward
-  B10000101, // X right
-  B10101100, // X Back
-  B10100001 // X Left
-}; //ZYX
+	B10001000,	// Z Up X Forward
+	B10000101,	// X right
+	B10101100,	// X Back
+	B10100001,	// X Left
+}; // ZYX
 
 byte orientation = 1;
 
 //Need some helper funct to read/write integers
-void writeIntEE(int address, int value) {
-  EEPROM.write(address + 1, value >> 8); //upper byte
-  EEPROM.write(address, value & 0xff); // write lower byte
+void writeIntEE(int address, int value)
+{
+	EEPROM.write(address + 1, value >> 8); //upper byte
+	EEPROM.write(address, value & 0xff); // write lower byte
 }
 
-int readIntEE(int address) {
-  return (EEPROM.read(address + 1) << 8 | EEPROM.read(address));
+int readIntEE(int address)
+{
+	return (EEPROM.read(address + 1) << 8 | EEPROM.read(address));
 }
 
 void writeLongEE(int address,  long value) {
@@ -263,18 +264,16 @@ unsigned long sensor_timestamp;
 
 void recenter()
 {
-  if (outputMode == UI)
-  {
-    Serial.println("M\tRecentering");
-  }
-  sampleCount = 0;
-  cx = cy = cz = 0;
-  calibrated = false;
+	if (outputMode == UI)
+		Serial.println("M\tRecentering");
+	sampleCount = 0;
+	cx = cy = cz = 0;
+	calibrated = false;
 }
 //unsigned char accel_fsr;  // accelerometer full-scale rate, in +/- Gs (possible values are 2, 4, 8 or 16).  Default:  2
 //unsigned short dmp_update_rate; // update rate, in hZ (possible values are between 4 and 1000).  Default:  100
 //unsigned short gyro_fsr;  // Gyro full-scale_rate, in +/- degrees/sec, possible values are 250, 500, 1000 or 2000.  Default:  2000
-boolean new_gyro , dmp_on;
+boolean new_gyro, dmp_on;
 void loop()
 {
   blink();
@@ -597,69 +596,72 @@ void gyro_data_ready_cb(void) {
   new_gyro = 1;
 }
 #ifndef POLLMPU
-ISR(INT6_vect) {
-  new_gyro = 1;
+ISR(INT6_vect)
+{
+	new_gyro = 1;
 }
 #endif
 
-void tap_cb (unsigned char p1, unsigned char p2)
+void tap_cb(unsigned char p1, unsigned char p2)
 {
-  if (outputMode == UI)
-  {
-    Serial.print("M\tTap Detected ");
-    Serial.print((int)p1);
-    Serial.print(" ");
-    Serial.println((int)p2);
-  }
+	if (outputMode == UI)
+	{
+		Serial.print("M\tTap Detected ");
+		Serial.print((int)p1);
+		Serial.print(" ");
+		Serial.println((int)p2);
+	}
 }
 
+boolean initialize_mpu()
+{
+	int result;
 
-boolean initialize_mpu() {
-  int result;
+	mpu_init();
 
-  mpu_init();
+	/* Get/set hardware configuration. Start gyro. */
+	/* Wake up all sensors. */
+	mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL);
 
-  /* Get/set hardware configuration. Start gyro. */
-  /* Wake up all sensors. */
-  mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL);
+	mpu_set_gyro_fsr(2000);
+	mpu_set_accel_fsr(2);
+	mpu_set_lpf(42);
 
-  mpu_set_gyro_fsr (2000);
-  mpu_set_accel_fsr(2);
-  mpu_set_lpf(42);
+	/* Push both gyro and accel data into the FIFO. */
+	mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL);
+	mpu_set_sample_rate(DEFAULT_MPU_HZ);
 
-  /* Push both gyro and accel data into the FIFO. */
-  mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL);
-  mpu_set_sample_rate(DEFAULT_MPU_HZ);
+	// To initialize the DMP:
+	// 1. Call dmp_load_motion_driver_firmware()
+	// 2. Push the gyro and accel orientation matrix to the DMP.
+	// 4. Call dmp_enable_feature(mask) to enable different features.
+	// 5. Call dmp_set_fifo_rate(freq) to select a DMP output rate.
 
-  /* To initialize the DMP:
-   * 1. Call dmp_load_motion_driver_firmware(). .
-   * 2. Push the gyro and accel orientation matrix to the DMP.
-   * 4. Call dmp_enable_feature(mask) to enable different features.
-   * 5. Call dmp_set_fifo_rate(freq) to select a DMP output rate.
-   */
+	dmp_load_motion_driver_firmware();
 
-  dmp_load_motion_driver_firmware();
+	DEBUG_PRINTLN("Firmware Loaded ");
 
-  DEBUG_PRINTLN("Firmware Loaded ");
+	dmp_set_orientation(gyro_orients[orientation]);
+	//while (dmp_set_orientation( inv_orientation_matrix_to_scalar(gyro_orientation)))
+	DEBUG_PRINTLN("orientation Loaded ");
 
-  dmp_set_orientation(gyro_orients[orientation]);
-  //while (dmp_set_orientation( inv_orientation_matrix_to_scalar(gyro_orientation)))
-  DEBUG_PRINTLN("orientation Loaded ");
+	dmp_register_tap_cb(&tap_cb);
 
-  dmp_register_tap_cb(&tap_cb);
+	uint16_t dmp_features = DMP_FEATURE_6X_LP_QUAT
+							| DMP_FEATURE_SEND_RAW_ACCEL
+							| DMP_FEATURE_SEND_CAL_GYRO
+							| DMP_FEATURE_GYRO_CAL;
 
-  unsigned short dmp_features = DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_SEND_RAW_ACCEL |
-                                DMP_FEATURE_SEND_CAL_GYRO | DMP_FEATURE_GYRO_CAL;
+	dmp_features = dmp_features |  DMP_FEATURE_TAP ;
 
-  dmp_features = dmp_features |  DMP_FEATURE_TAP ;
+	dmp_enable_feature(dmp_features);
+	dmp_set_fifo_rate(DEFAULT_MPU_HZ);
 
-  dmp_enable_feature(dmp_features);
-  dmp_set_fifo_rate(DEFAULT_MPU_HZ);
-
-  return true;
+	return true;
 }
 
-void disable_mpu() {
+void disable_mpu()
+{
   mpu_set_dmp_state(0);
   //hal.dmp_on = 0;
   dmp_on = 0;
@@ -669,51 +671,45 @@ void disable_mpu() {
 #endif
 }
 
-void enable_mpu() {
+void enable_mpu()
+{
 #ifndef POLLMPU
-  EICRB |= (1 << ISC60) | (1 << ISC61); // sets the interrupt type for EICRB (INT6)
-  EIMSK |= (1 << INT6); // activates the interrupt. 6 for 6, etc
+	EICRB |= (1 << ISC60) | (1 << ISC61); // sets the interrupt type for EICRB (INT6)
+	EIMSK |= (1 << INT6); // activates the interrupt. 6 for 6, etc
 #endif
 
-  mpu_set_dmp_state(1);  // This enables the DMP; at this point, interrupts should commence
-  dmp_on = 1;
+	mpu_set_dmp_state(1);  // This enables the DMP; at this point, interrupts should commence
+	dmp_on = 1;
 }
 
+void loadBiases()
+{
+	gBias[0] = readLongEE (EE_XGYRO);
+	gBias[1] = readLongEE (EE_YGYRO);
+	gBias[2] = readLongEE (EE_ZGYRO);
 
+	aBias[0] = readLongEE (EE_XACCEL);
+	aBias[1] = readLongEE (EE_YACCEL);
+	aBias[2] = readLongEE (EE_ZACCEL);
 
-//
-void loadBiases() {
-  gBias[0] = readLongEE (EE_XGYRO);
-  gBias[1] = readLongEE (EE_YGYRO);
-  gBias[2] = readLongEE (EE_ZGYRO);
+	//dmp_set_gyro_bias(gBias); <- all sorts of undocumented shit
+	//dmp_set_accel_bias(aBias);
 
-  aBias[0] = readLongEE (EE_XACCEL);
-  aBias[1] = readLongEE (EE_YACCEL);
-  aBias[2] = readLongEE (EE_ZACCEL);
-
-  //dmp_set_gyro_bias(gBias); <- all sorts of undocumented shit
-  //dmp_set_accel_bias(aBias);
-
-  mpu_set_gyro_bias_reg(gBias);
-  mpu_set_accel_bias_6050_reg(aBias, true);
-
-  return ;
+	mpu_set_gyro_bias_reg(gBias);
+	mpu_set_accel_bias_6050_reg(aBias, true);
 }
 
 void blink()
 {
-  unsigned short delta = 100;
+	uint16_t delta = 100;
 
-  if (calibrated)
-    delta = 300;
+	if (calibrated)
+		delta = 300;
 
-  if (nowMillis > lastMillis + delta)
-  {
-    blinkState = !blinkState;
-    digitalWrite(LED_PIN, blinkState);
-    lastMillis = nowMillis;
-  }
+	if (nowMillis > lastMillis + delta)
+	{
+		blinkState = !blinkState;
+		digitalWrite(LED_PIN, blinkState);
+		lastMillis = nowMillis;
+	}
 }
-
-
-
