@@ -2527,38 +2527,40 @@ void  mpu_load_firmware(unsigned short length, const unsigned char *firmware,
  *  @param[in]  enable  1 to turn on the DMP.
  *  @return     0 if successful.
  */
-void  mpu_set_dmp_state(unsigned char enable)
+void mpu_set_dmp_state(unsigned char enable)
 {
-    unsigned char tmp;
-    if (st.chip_cfg.dmp_on == enable)
-        return ;
+	unsigned char tmp;
 
-    if (enable) {
-        if (!st.chip_cfg.dmp_loaded)
-            return ;
-        /* Disable data ready interrupt. */
-        set_int_enable(0);
-        /* Disable bypass mode. */
-        mpu_set_bypass(0);
-        /* Keep constant sample rate, FIFO rate controlled by DMP. */
-        mpu_set_sample_rate(st.chip_cfg.dmp_sample_rate);
-        /* Remove FIFO elements. */
-        tmp = 0;
-        i2c_write(st.hw->addr, 0x23, 1, &tmp);
-        st.chip_cfg.dmp_on = 1;
-        /* Enable DMP interrupt. */
-        set_int_enable(1);
-        mpu_reset_fifo();
-    } else {
-        /* Disable DMP interrupt. */
-        set_int_enable(0);
-        /* Restore FIFO settings. */
-        tmp = st.chip_cfg.fifo_enable;
-        i2c_write(st.hw->addr, 0x23, 1, &tmp);
-        st.chip_cfg.dmp_on = 0;
-        mpu_reset_fifo();
-    }
-    return ;
+	if (st.chip_cfg.dmp_on == enable)
+		return;
+
+	if (enable)
+	{
+		if (!st.chip_cfg.dmp_loaded)
+			return;
+			
+		// Disable data ready interrupt.
+		set_int_enable(0);
+		// Disable bypass mode.
+		mpu_set_bypass(0);
+		// Keep constant sample rate, FIFO rate controlled by DMP. 
+		mpu_set_sample_rate(st.chip_cfg.dmp_sample_rate);
+		// Remove FIFO elements.
+		tmp = 0;
+		i2c_write(st.hw->addr, 0x23, 1, &tmp);
+		st.chip_cfg.dmp_on = 1;
+		// Enable DMP interrupt.
+		set_int_enable(1);
+	} else {
+		// Disable DMP interrupt.
+		set_int_enable(0);
+		// Restore FIFO settings.
+		tmp = st.chip_cfg.fifo_enable;
+		i2c_write(st.hw->addr, 0x23, 1, &tmp);
+		st.chip_cfg.dmp_on = 0;
+	}
+
+	mpu_reset_fifo();
 }
 
 /**

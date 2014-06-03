@@ -3,7 +3,7 @@ CFLAGS   = --std-c99 --model-large -Imcu-lib -DNRF24LE1 -DEMPL_TARGET_NRF24LE1
 #CFLAGS  += -DDBG_MODE=0
 LFLAGS   = --code-loc 0x0000 --code-size 0x4000 --xram-loc 0x0000 --xram-size 0x400
 ASFLAGS  = -plosgff
-RELFILES = inv_mpu.rel inv_mpu_dmp_motion_driver.rel
+RELFILES = edtracker2.rel inv_mpu.rel inv_mpu_dmp_motion_driver.rel
 
 VPATH   = mcu-lib:invenlib
 
