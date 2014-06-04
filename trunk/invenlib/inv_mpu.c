@@ -755,7 +755,8 @@ void mpu_init()
     data[0] = BIT_RESET;
     if (i2c_write(st.hw->addr, st.reg->pwr_mgmt_1, 1, data))
         return ;
-    delay_ms(100);
+    
+	delay_ms(100);
 
     // Wake up chip
     data[0] = 0x00;
@@ -781,7 +782,7 @@ void mpu_init()
         }
     } else {
         if (i2c_read(st.hw->addr, st.reg->prod_id, 1, data))
-            return ;
+            return;
         rev = data[0] & 0x0F;
         if (!rev) {
             log_e("Product ID read as 0 indicates device is either "
