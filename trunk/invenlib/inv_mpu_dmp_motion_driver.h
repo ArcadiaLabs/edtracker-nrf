@@ -85,8 +85,7 @@ void dmp_enable_gyro_cal(unsigned char enable);
 /* Read function. This function should be called whenever the MPU interrupt is
  * detected.
  */
-void  dmp_read_fifo(short *gyro, short *accel, long *quat,
-    unsigned long *timestamp, short *sensors, unsigned char *more);
+void dmp_read_fifo(short *gyro, short *accel, long *quat, unsigned long *timestamp, short *sensors, unsigned char *more);
 
 #endif  /* #ifndef _INV_MPU_DMP_MOTION_DRIVER_H_ */
 
