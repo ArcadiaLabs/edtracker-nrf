@@ -751,32 +751,32 @@ void mpu_init()
 {
     unsigned char data[6], rev;
 
-    /* Reset device. */
+    // Reset device.
     data[0] = BIT_RESET;
     if (i2c_write(st.hw->addr, st.reg->pwr_mgmt_1, 1, data))
         return ;
     delay_ms(100);
 
-    /* Wake up chip. */
+    // Wake up chip
     data[0] = 0x00;
     if (i2c_write(st.hw->addr, st.reg->pwr_mgmt_1, 1, data))
         return ;
 
-#if defined MPU6050
-    /* Check product revision. */
+    // Check product revision.
     if (i2c_read(st.hw->addr, st.reg->accel_offs, 6, data))
-        return ;
-    rev = ((data[5] & 0x01) << 2) | ((data[3] & 0x01) << 1) |
-        (data[1] & 0x01);
+        return;
+		
+    rev = ((data[5] & 0x01) << 2) | ((data[3] & 0x01) << 1) | (data[1] & 0x01);
 
-    if (rev) {
-        /* Congrats, these parts are better. */
+    if (rev)
+	{
+        // Congrats, these parts are better.
         if (rev == 1)
             st.chip_cfg.accel_half = 1;
         else if (rev == 2)
             st.chip_cfg.accel_half = 0;
         else {
-            log_e("Unsupported software product rev %d.\n", rev);
+            //log_e("Unsupported software product rev %d.\n", rev);
             return ;
         }
     } else {
@@ -793,24 +793,6 @@ void mpu_init()
         } else
             st.chip_cfg.accel_half = 0;
     }
-#elif defined MPU6500
-#define MPU6500_MEM_REV_ADDR    (0x17)
-    mpu_read_mem(MPU6500_MEM_REV_ADDR, 1, &rev);
-        
-    if (rev == 0x1)
-        st.chip_cfg.accel_half = 0;
-    else {
-        log_e("Unsupported software product rev %d.\n", rev);
-        return ;
-    }
-
-    /* MPU6500 shares 4kB of memory between the DMP and the FIFO. Since the
-     * first 3kB are needed by the DMP, we'll use the last 1kB for the FIFO.
-     */
-    data[0] = BIT_FIFO_SIZE_1024 | 0x8;
-    if (i2c_write(st.hw->addr, st.reg->accel_cfg2, 1, data))
-        return ;
-#endif
 
     /* Set to invalid values to ensure no I2C writes are skipped. */
     st.chip_cfg.sensors = 0xFF;
@@ -820,9 +802,6 @@ void mpu_init()
     st.chip_cfg.sample_rate = 0xFFFF;
     st.chip_cfg.fifo_enable = 0xFF;
     st.chip_cfg.bypass_mode = 0xFF;
-#ifdef AK89xx_SECONDARY
-    st.chip_cfg.compass_sample_rate = 0xFFFF;
-#endif
     /* mpu_set_sensors always preserves this setting. */
     st.chip_cfg.clk_src = INV_CLK_PLL;
     /* Handled in next call to mpu_set_bypass. */
@@ -841,19 +820,12 @@ void mpu_init()
     mpu_set_lpf(42);   // 188, 98, 42, 20, 10, 5
     mpu_configure_fifo(0);
     
-
     //if (int_param)
     //    reg_int_cb(int_param);
 
-#ifdef AK89xx_SECONDARY
-    setup_compass();
-    if (mpu_set_compass_sample_rate(10))
-        return ;
-#else
-    /* Already disabled by setup_compass. */
+    // Already disabled by setup_compass.
     if (mpu_set_bypass(0))
         return ;
-#endif
 
     mpu_set_sensors(0);
 }

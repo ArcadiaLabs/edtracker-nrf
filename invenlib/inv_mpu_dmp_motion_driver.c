@@ -1125,7 +1125,7 @@ void  dmp_enable_gyro_cal(unsigned char enable)
  */
 uint8_t dmp_enable_lp_quat(unsigned char enable)
 {
-    unsigned char regs[4];
+    uint8_t regs[4];
     if (enable)
 	{
         regs[0] = DINBC0;
