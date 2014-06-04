@@ -59,16 +59,15 @@ struct int_param_s {
 #define MPU_INT_STATUS_DMP_4            (0x1000)
 #define MPU_INT_STATUS_DMP_5            (0x2000)
 
-/* Set up APIs */
-void  mpu_init();
+// Set up APIs
+void  mpu_init(void);
 uint8_t mpu_init_slave(void);
 uint8_t mpu_set_bypass(unsigned char bypass_on);
 void mpu_force_reset();
 
-/* Configuration APIs */
+// Configuration APIs
 uint8_t mpu_lp_accel_mode(unsigned char rate);
-uint8_t mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
-    unsigned char lpa_freq);
+uint8_t mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time, unsigned char lpa_freq);
 uint8_t mpu_set_int_level(unsigned char active_low);
 uint8_t mpu_set_int_latched(unsigned char enable);
 

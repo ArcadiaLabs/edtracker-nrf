@@ -667,6 +667,7 @@ static int set_int_enable(unsigned char enable)
  *  @brief      Register dump for testing.
  *  @return     0 if successful.
  */
+/*
 uint8_t mpu_reg_dump(void)
 {
     unsigned char ii;
@@ -681,6 +682,7 @@ uint8_t mpu_reg_dump(void)
     }
     return 0;
 }
+*/
 
 /**
  *  @brief      Read from a single register.
@@ -689,6 +691,7 @@ uint8_t mpu_reg_dump(void)
  *  @param[out] data    Register data.
  *  @return     0 if successful.
  */
+ /*
 uint8_t mpu_read_reg(unsigned char reg, unsigned char *data)
 {
     if (reg == st.reg->fifo_r_w || reg == st.reg->mem_r_w)
@@ -697,7 +700,9 @@ uint8_t mpu_read_reg(unsigned char reg, unsigned char *data)
         return -1;
     return i2c_read(st.hw->addr, reg, 1, data);
 }
+*/
 
+/*
 void mpu_force_reset()
 {
     unsigned char data[6];
@@ -709,7 +714,7 @@ void mpu_force_reset()
 		{
 			delay_ms(100);
 
-			/* Wake up chip. */
+			// Wake up chip.
 			data[0] = 0x00;
 			if (i2c_write(st.hw->addr, st.reg->pwr_mgmt_1, 1, data)==0)
 			{
@@ -726,6 +731,7 @@ void mpu_force_reset()
 		}
 	}
 }
+*/
 
 /**
  *  @brief      Initialize hardware.
@@ -740,7 +746,8 @@ void mpu_force_reset()
  *  @param[in]  int_param   Platform-specific parameters to interrupt API.
  *  @return     0 if successful.
  */
-void  mpu_init()
+// -
+void mpu_init()
 {
     unsigned char data[6], rev;
 
@@ -849,7 +856,6 @@ void  mpu_init()
 #endif
 
     mpu_set_sensors(0);
-    return ;
 }
 
 /**
@@ -951,7 +957,8 @@ uint8_t mpu_lp_accel_mode(unsigned char rate)
  *  @param[out] timestamp   Timestamp in milliseconds. Null if not needed.
  *  @return     0 if successful.
  */
-void  mpu_get_gyro_reg(short *data, unsigned long *timestamp)
+ /*
+void mpu_get_gyro_reg(short *data, unsigned long *timestamp)
 {
     unsigned char tmp[6];
 
@@ -967,6 +974,7 @@ void  mpu_get_gyro_reg(short *data, unsigned long *timestamp)
         get_ms(timestamp);
     return ;
 }
+*/
 
 /**
  *  @brief      Read raw accel data directly from the registers.
@@ -974,6 +982,7 @@ void  mpu_get_gyro_reg(short *data, unsigned long *timestamp)
  *  @param[out] timestamp   Timestamp in milliseconds. Null if not needed.
  *  @return     0 if successful.
  */
+ /*
 void  mpu_get_accel_reg(short *data, unsigned long *timestamp)
 {
     unsigned char tmp[6];
@@ -990,13 +999,14 @@ void  mpu_get_accel_reg(short *data, unsigned long *timestamp)
         get_ms(timestamp);
     return ;
 }
-
+*/
 /**
  *  @brief      Read temperature data directly from the registers.
  *  @param[out] data        Data in q16 format.
  *  @param[out] timestamp   Timestamp in milliseconds. Null if not needed.
  *  @return     0 if successful.
  */
+ /*
 uint8_t mpu_get_temperature(long *data, unsigned long *timestamp)
 {
     unsigned char tmp[2];
@@ -1013,7 +1023,7 @@ uint8_t mpu_get_temperature(long *data, unsigned long *timestamp)
 
     data[0] = (long)((35 + ((raw - (float)st.hw->temp_offset) / st.hw->temp_sens)) * 65536L);
     return 0;
-}
+}*/
 
 /**
  *  @brief      Push biases to the accel bias registers.
@@ -1022,6 +1032,7 @@ uint8_t mpu_get_temperature(long *data, unsigned long *timestamp)
  *  @param[in]  accel_bias  New biases.
  *  @return     0 if successful.
  */
+ /*
 void mpu_set_accel_bias(const long *accel_bias)
 {
     unsigned char data[6];
@@ -1066,6 +1077,7 @@ void mpu_set_accel_bias(const long *accel_bias)
         return ;
     return ;
 }
+*/
 
 /**
  *  @brief  Reset FIFO read/write pointers.
@@ -1133,7 +1145,7 @@ uint8_t mpu_reset_fifo(void)
  *  @param[out] fsr Current full-scale range.
  *  @return     0 if successful.
  */
-void  mpu_get_gyro_fsr(unsigned short *fsr)
+void mpu_get_gyro_fsr(unsigned short *fsr)
 {
     switch (st.chip_cfg.gyro_fsr) {
     case INV_FSR_250DPS:
@@ -1157,6 +1169,7 @@ void  mpu_get_gyro_fsr(unsigned short *fsr)
  *  @param[in]  fsr Desired full-scale range.
  *  @return     0 if successful.
  */
+// -
 void mpu_set_gyro_fsr(unsigned short fsr)
 {
     unsigned char data;
@@ -1164,7 +1177,8 @@ void mpu_set_gyro_fsr(unsigned short fsr)
     if (!(st.chip_cfg.sensors))
         return ;
 
-    switch (fsr) {
+    switch (fsr)
+	{
     case 250:
         data = INV_FSR_250DPS << 3;
         break;
@@ -1180,11 +1194,11 @@ void mpu_set_gyro_fsr(unsigned short fsr)
     }
 
     if (st.chip_cfg.gyro_fsr == (data >> 3))
-        return ;
+        return;
     if (i2c_write(st.hw->addr, st.reg->gyro_cfg, 1, &data))
-        return ;
-    st.chip_cfg.gyro_fsr = data >> 3;
-    return;
+        return;
+
+	st.chip_cfg.gyro_fsr = data >> 3;
 }
 
 /**
@@ -1218,6 +1232,7 @@ void mpu_get_accel_fsr(unsigned char *fsr)
  *  @param[in]  fsr Desired full-scale range.
  *  @return     0 if successful.
  */
+// -
 void mpu_set_accel_fsr(unsigned char fsr)
 {
     unsigned char data;
@@ -1289,6 +1304,7 @@ void mpu_get_lpf(unsigned short *lpf)
  *  @param[in]  lpf Desired LPF setting.
  *  @return     0 if successful.
  */
+// -
 void mpu_set_lpf(unsigned short lpf)
 {
     unsigned char data;
@@ -1337,6 +1353,7 @@ void  mpu_get_sample_rate(unsigned short *rate)
  *  @param[in]  rate    Desired sampling rate (Hz).
  *  @return     0 if successful.
  */
+// -
 void mpu_set_sample_rate(unsigned short rate)
 {
     unsigned char data;
@@ -1349,13 +1366,12 @@ void mpu_set_sample_rate(unsigned short rate)
     else {
         if (st.chip_cfg.lp_accel_mode) {
             if (rate && (rate <= 40)) {
-                /* Just stay in low-power accel mode. */
+                // Just stay in low-power accel mode.
                 mpu_lp_accel_mode(rate);
-                return ;
+                return;
             }
-            /* Requested rate exceeds the allowed frequencies in LP accel mode,
-             * switch back to full-power mode.
-             */
+            // Requested rate exceeds the allowed frequencies in LP accel mode,
+            // switch back to full-power mode.
             mpu_lp_accel_mode(0);
         }
         if (rate < 4)
@@ -1419,6 +1435,7 @@ uint8_t mpu_set_compass_sample_rate(unsigned short rate)
     st.chip_cfg.compass_sample_rate = st.chip_cfg.sample_rate / (div + 1);
     return 0;
 #else
+	rate;
     return 1;
 #endif
 }
@@ -1518,6 +1535,7 @@ uint8_t mpu_get_fifo_config(unsigned char *sensors)
  *  @param[in]  sensors Mask of sensors to push to FIFO.
  *  @return     0 if successful.
  */
+// -
 void mpu_configure_fifo(unsigned char sensors)
 {
     unsigned char prev;
@@ -1575,6 +1593,7 @@ uint8_t mpu_get_power_state(unsigned char *power_on)
  *  @param[in]  sensors    Mask of sensors to wake.
  *  @return     0 if successful.
  */
+// -
 void mpu_set_sensors(unsigned char sensors)
 {
     unsigned char data;
@@ -2127,7 +2146,6 @@ static int get_st_biases_test(long *gyro, long *accel, unsigned char hw_test)
     return 0;
 }
 
-
 // Returns physical values in Q16.16 format
 void get_st_biases(long *gyro, long *accel)
 {
@@ -2253,6 +2271,7 @@ void get_st_biases(long *gyro, long *accel)
  *  @param[out] accel       Accel biases (if applicable) in q16 format.
  *  @return     Result mask (see above).
  */
+ /*
 uint8_t mpu_run_self_test(long *gyro, long *accel)
 {
 #ifdef MPU6050
@@ -2267,13 +2286,15 @@ uint8_t mpu_run_self_test(long *gyro, long *accel)
     unsigned short gyro_fsr, sample_rate, lpf;
     unsigned char dmp_was_on;
 
-    if (st.chip_cfg.dmp_on) {
+    if (st.chip_cfg.dmp_on)
+	{
         mpu_set_dmp_state(0);
         dmp_was_on = 1;
-    } else
+    } else {
         dmp_was_on = 0;
+	}
 
-    /* Get initial settings. */
+    // Get initial settings.
     mpu_get_gyro_fsr(&gyro_fsr);
     mpu_get_accel_fsr(&accel_fsr);
     mpu_get_lpf(&lpf);
@@ -2281,15 +2302,14 @@ uint8_t mpu_run_self_test(long *gyro, long *accel)
     sensors_on = st.chip_cfg.sensors;
     mpu_get_fifo_config(&fifo_sensors);
 
-    /* For older chips, the self-test will be different. */
+    // For older chips, the self-test will be different.
 #if defined MPU6050
     for (ii = 0; ii < tries; ii++)
         if (!get_st_biases_test(gyro, accel, 0))
             break;
     if (ii == tries) {
-        /* If we reach this point, we most likely encountered an I2C error.
-         * We'll just report an error for all three sensors.
-         */
+        // If we reach this point, we most likely encountered an I2C error.
+        // We'll just report an error for all three sensors.
         result = 0;
         goto restore;
     }
@@ -2297,7 +2317,7 @@ uint8_t mpu_run_self_test(long *gyro, long *accel)
         if (!get_st_biases_test(gyro_st, accel_st, 1))
             break;
     if (ii == tries) {
-        /* Again, probably an I2C error. */
+        // Again, probably an I2C error.
         result = 0;
         goto restore;
     }
@@ -2313,13 +2333,12 @@ uint8_t mpu_run_self_test(long *gyro, long *accel)
 
 restore:
 #elif defined MPU6500
-    /* For now, this function will return a "pass" result for all three sensors
-     * for compatibility with current test applications.
-     */
+    // For now, this function will return a "pass" result for all three sensors
+    // for compatibility with current test applications.
     get_st_biases_test(gyro, accel, 0);
     result = 0x7;
 #endif
-    /* Set to invalid values to ensure no I2C writes are skipped. */
+    // Set to invalid values to ensure no I2C writes are skipped.
     st.chip_cfg.gyro_fsr = 0xFF;
     st.chip_cfg.accel_fsr = 0xFF;
     st.chip_cfg.lpf = 0xFF;
@@ -2339,10 +2358,9 @@ restore:
 
     return result;
 }
+*/
 
-
-
-
+/*
 void mpu_get_biases(long *gyro, long *accel)
 {
     unsigned char accel_fsr, fifo_sensors, sensors_on;
@@ -2355,7 +2373,7 @@ void mpu_get_biases(long *gyro, long *accel)
     } else
         dmp_was_on = 0;
 
-    /* Get initial settings. */
+    // Get initial settings.
     mpu_get_gyro_fsr(&gyro_fsr);
     mpu_get_accel_fsr(&accel_fsr);
     mpu_get_lpf(&lpf);
@@ -2365,7 +2383,7 @@ void mpu_get_biases(long *gyro, long *accel)
 
     get_st_biases(gyro, accel);
 
-    /* Set to invalid values to ensure no I2C writes are skipped. */
+    // Set to invalid values to ensure no I2C writes are skipped.
     st.chip_cfg.gyro_fsr = 0xFF;
     st.chip_cfg.accel_fsr = 0xFF;
     st.chip_cfg.lpf = 0xFF;
@@ -2386,6 +2404,7 @@ void mpu_get_biases(long *gyro, long *accel)
     if (dmp_was_on)
         mpu_set_dmp_state(1);
 }
+*/
 
 /**
  *  @brief      Write to the DMP memory.
@@ -2396,28 +2415,25 @@ void mpu_get_biases(long *gyro, long *accel)
  *  @param[in]  data        Bytes to write to memory.
  *  @return     0 if successful.
  */
-void  mpu_write_mem(unsigned short mem_addr, unsigned short length,
-        unsigned char *data)
+void mpu_write_mem(unsigned short mem_addr, unsigned short length, unsigned char *data)
 {
     unsigned char tmp[2];
 
-    if (!data)
-        return ;
-    if (!st.chip_cfg.sensors)
-        return ;
+    if (!data  ||  !st.chip_cfg.sensors)
+        return;
 
     tmp[0] = (unsigned char)(mem_addr >> 8);
     tmp[1] = (unsigned char)(mem_addr & 0xFF);
 
-    /* Check bank boundaries. */
+    // Check bank boundaries.
     if (tmp[1] + length > st.hw->bank_size)
-        return ;
+        return;
 
     if (i2c_write(st.hw->addr, st.reg->bank_sel, 2, tmp))
-        return ;
+        return;
+
     if (i2c_write(st.hw->addr, st.reg->mem_r_w, length, data))
-        return ;
-    return ;
+        return;
 }
 
 /**
@@ -2429,14 +2445,11 @@ void  mpu_write_mem(unsigned short mem_addr, unsigned short length,
  *  @param[out] data        Bytes read from memory.
  *  @return     0 if successful.
  */
-void mpu_read_mem(unsigned short mem_addr, unsigned short length,
-        unsigned char *data)
+void mpu_read_mem(unsigned short mem_addr, unsigned short length, unsigned char *data)
 {
     unsigned char tmp[2];
 
-    if (!data)
-        return ;
-    if (!st.chip_cfg.sensors)
+    if (!data  ||  !st.chip_cfg.sensors)
         return ;
 
     tmp[0] = (unsigned char)(mem_addr >> 8);
@@ -2450,7 +2463,6 @@ void mpu_read_mem(unsigned short mem_addr, unsigned short length,
         return ;
     if (i2c_read(st.hw->addr, st.reg->mem_r_w, length, data))
         return ;
-    return ;
 }
 
 /**
@@ -2461,65 +2473,43 @@ void mpu_read_mem(unsigned short mem_addr, unsigned short length,
  *  @param[in]  sample_rate Fixed sampling rate used when DMP is enabled.
  *  @return     0 if successful.
  */
-void  mpu_load_firmware(unsigned short length, const unsigned char *firmware,
-    unsigned short start_addr, unsigned short sample_rate)
+void mpu_load_firmware(uint16_t length, const uint8_t* firmware, uint16_t start_addr, uint16_t sample_rate)
 {
     unsigned short ii;
     unsigned short this_write;
     /* Must divide evenly into st.hw->bank_size to avoid bank crossings. */
-#define LOAD_CHUNK  (16)
+#define LOAD_CHUNK  16
     unsigned char cur[LOAD_CHUNK], tmp[2];
 	
 	// For arduino, read firmware out of PROGMEM (Flash)
-	
-#if defined EMPL_TARGET_ATMEGA328
-	unsigned char firmware_chunk[LOAD_CHUNK];
-#endif
 	
     if (st.chip_cfg.dmp_loaded)
         /* DMP should only be loaded once. */
         return ;
 
     if (!firmware)
-        return ;
+        return;
+		
     for (ii = 0; ii < length; ii += this_write) 
 	{
         this_write = min(LOAD_CHUNK, length - ii);
 		
-#if defined EMPL_TARGET_ATMEGA328
 
-		int x;
-		unsigned char *pFirmware = (unsigned char *)&firmware[ii];
-		for ( x = 0; x < this_write; x++ ) 
-		{
-			firmware_chunk[x] = pgm_read_byte_near(pFirmware+x);
-		}
-        mpu_write_mem(ii, this_write, firmware_chunk);
-#else
-		
         mpu_write_mem(ii, this_write, (unsigned char*)&firmware[ii]);
-#endif
-			
         mpu_read_mem(ii, this_write, cur);
             
-#if defined EMPL_TARGET_ATMEGA328
-		if (memcmp(firmware_chunk, cur, this_write))
-            return ;
-#else
 		if (memcmp(firmware+ii, cur, this_write))
             return ;
-#endif
     }
 
-    /* Set program start address. */
+    // Set program start address.
     tmp[0] = start_addr >> 8;
     tmp[1] = start_addr & 0xFF;
     if (i2c_write(st.hw->addr, st.reg->prgm_start_h, 2, tmp))
-        return ;
+        return;
 
     st.chip_cfg.dmp_loaded = 1;
     st.chip_cfg.dmp_sample_rate = sample_rate;
-    return ;
 }
 
 /**
@@ -2527,6 +2517,7 @@ void  mpu_load_firmware(unsigned short length, const unsigned char *firmware,
  *  @param[in]  enable  1 to turn on the DMP.
  *  @return     0 if successful.
  */
+// -
 void mpu_set_dmp_state(unsigned char enable)
 {
 	unsigned char tmp;
@@ -2568,14 +2559,16 @@ void mpu_set_dmp_state(unsigned char enable)
  *  @param[out] enabled 1 if enabled.
  *  @return     0 if successful.
  */
+ /*
 void mpu_get_dmp_state(unsigned char *enabled)
 {
     enabled[0] = st.chip_cfg.dmp_on;
     return ;
 }
+*/
 
-
-/* This initialization is similar to the one in ak8975.c. */
+/*
+// This initialization is similar to the one in ak8975.c
 static int setup_compass(void)
 {
 #ifdef AK89xx_SECONDARY
@@ -2583,7 +2576,7 @@ static int setup_compass(void)
 
     mpu_set_bypass(1);
 
-    /* Find compass. Possible addresses range from 0x0C to 0x0F. */
+    // Find compass. Possible addresses range from 0x0C to 0x0F. 
     for (akm_addr = 0x0C; akm_addr <= 0x0F; akm_addr++) {
         int result;
         result = i2c_read(akm_addr, AKM_REG_WHOAMI, 1, data);
@@ -2592,7 +2585,7 @@ static int setup_compass(void)
     }
 
     if (akm_addr > 0x0F) {
-        /* TODO: Handle this case in all compass-related functions. */
+        // TODO: Handle this case in all compass-related functions. 
         log_e("Compass not found.\n");
         return -1;
     }
@@ -2609,7 +2602,7 @@ static int setup_compass(void)
         return -1;
     delay_ms(1);
 
-    /* Get sensitivity adjustment data from fuse ROM. */
+    // Get sensitivity adjustment data from fuse ROM. 
     if (i2c_read(st.chip_cfg.compass_addr, AKM_REG_ASAX, 3, data))
         return -1;
     st.chip_cfg.mag_sens_adj[0] = (long)data[0] + 128;
@@ -2623,53 +2616,53 @@ static int setup_compass(void)
 
     mpu_set_bypass(0);
 
-    /* Set up master mode, master clock, and ES bit. */
+    // Set up master mode, master clock, and ES bit. 
     data[0] = 0x40;
     if (i2c_write(st.hw->addr, st.reg->i2c_mst, 1, data))
         return -1;
 
-    /* Slave 0 reads from AKM data registers. */
+    // Slave 0 reads from AKM data registers. 
     data[0] = BIT_I2C_READ | st.chip_cfg.compass_addr;
     if (i2c_write(st.hw->addr, st.reg->s0_addr, 1, data))
         return -1;
 
-    /* Compass reads start at this register. */
+    // Compass reads start at this register. 
     data[0] = AKM_REG_ST1;
     if (i2c_write(st.hw->addr, st.reg->s0_reg, 1, data))
         return -1;
 
-    /* Enable slave 0, 8-byte reads. */
+    // Enable slave 0, 8-byte reads. 
     data[0] = BIT_SLAVE_EN | 8;
     if (i2c_write(st.hw->addr, st.reg->s0_ctrl, 1, data))
         return -1;
 
-    /* Slave 1 changes AKM measurement mode. */
+    // Slave 1 changes AKM measurement mode. 
     data[0] = st.chip_cfg.compass_addr;
     if (i2c_write(st.hw->addr, st.reg->s1_addr, 1, data))
         return -1;
 
-    /* AKM measurement mode register. */
+    // AKM measurement mode register. 
     data[0] = AKM_REG_CNTL;
     if (i2c_write(st.hw->addr, st.reg->s1_reg, 1, data))
         return -1;
 
-    /* Enable slave 1, 1-byte writes. */
+    // Enable slave 1, 1-byte writes. 
     data[0] = BIT_SLAVE_EN | 1;
     if (i2c_write(st.hw->addr, st.reg->s1_ctrl, 1, data))
         return -1;
 
-    /* Set slave 1 data. */
+    // Set slave 1 data. 
     data[0] = AKM_SINGLE_MEASUREMENT;
     if (i2c_write(st.hw->addr, st.reg->s1_do, 1, data))
         return -1;
 
-    /* Trigger slave 0 and slave 1 actions at each sample. */
+    // Trigger slave 0 and slave 1 actions at each sample. 
     data[0] = 0x03;
     if (i2c_write(st.hw->addr, st.reg->i2c_delay_ctrl, 1, data))
         return -1;
 
 #ifdef MPU9150
-    /* For the MPU9150, the auxiliary I2C bus needs to be set to VDD. */
+    // For the MPU9150, the auxiliary I2C bus needs to be set to VDD. 
     data[0] = BIT_I2C_MST_VDDIO;
     if (i2c_write(st.hw->addr, st.reg->yg_offs_tc, 1, data))
         return -1;
@@ -2680,13 +2673,14 @@ static int setup_compass(void)
     return -1;
 #endif
 }
-
+*/
 /**
  *  @brief      Read raw compass data.
  *  @param[out] data        Raw data in hardware units.
  *  @param[out] timestamp   Timestamp in milliseconds. Null if not needed.
  *  @return     0 if successful.
  */
+
 uint8_t mpu_get_compass_reg(short *data, unsigned long *timestamp)
 {
 #ifdef AK89xx_SECONDARY
@@ -2707,13 +2701,13 @@ uint8_t mpu_get_compass_reg(short *data, unsigned long *timestamp)
 #endif
 
 #if defined AK8975_SECONDARY
-    /* AK8975 doesn't have the overrun error bit. */
+    // AK8975 doesn't have the overrun error bit.
     if (!(tmp[0] & AKM_DATA_READY))
         return -2;
     if ((tmp[7] & AKM_OVERFLOW) || (tmp[7] & AKM_DATA_ERROR))
         return -3;
 #elif defined AK8963_SECONDARY
-    /* AK8963 doesn't have the data read error bit. */
+    // AK8963 doesn't have the data read error bit.
     if (!(tmp[0] & AKM_DATA_READY) || (tmp[0] & AKM_DATA_OVERRUN))
         return -2;
     if (tmp[7] & AKM_OVERFLOW)
@@ -2731,6 +2725,8 @@ uint8_t mpu_get_compass_reg(short *data, unsigned long *timestamp)
         get_ms(timestamp);
     return 0;
 #else
+	data;
+	timestamp;
     return -1;
 #endif
 }
@@ -2740,15 +2736,18 @@ uint8_t mpu_get_compass_reg(short *data, unsigned long *timestamp)
  *  @param[out] fsr Current full-scale range.
  *  @return     0 if successful.
  */
+ /*
 uint8_t mpu_get_compass_fsr(unsigned short *fsr)
 {
 #ifdef AK89xx_SECONDARY
     fsr[0] = st.hw->compass_fsr;
     return 0;
 #else
+	fsr;
     return -1;
 #endif
 }
+*/
 
 /**
  *  @brief      Enters LP accel motion interrupt mode.
@@ -2794,8 +2793,8 @@ uint8_t mpu_get_compass_fsr(unsigned short *fsr)
  *  @param[in]  lpa_freq    Minimum sampling rate, or zero to disable.
  *  @return     0 if successful.
  */
-uint8_t mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
-    unsigned char lpa_freq)
+ /*
+uint8_t mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time, unsigned char lpa_freq)
 {
     unsigned char data[3];
 
@@ -2803,8 +2802,8 @@ uint8_t mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
         unsigned char thresh_hw;
 
 #if defined MPU6050
-        /* TODO: Make these const/#defines. */
-        /* 1LSb = 32mg. */
+        // TODO: Make these const/#defines.
+        // 1LSb = 32mg. 
         if (thresh > 8160)
             thresh_hw = 255;
         else if (thresh < 32)
@@ -2812,7 +2811,7 @@ uint8_t mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
         else
             thresh_hw = thresh >> 5;
 #elif defined MPU6500
-        /* 1LSb = 4mg. */
+        // 1LSb = 4mg.
         if (thresh > 1020)
             thresh_hw = 255;
         else if (thresh < 4)
@@ -2822,7 +2821,7 @@ uint8_t mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
 #endif
 
         if (!time)
-            /* Minimum duration must be 1ms. */
+            // Minimum duration must be 1ms.
             time = 1;
 
 #if defined MPU6050
@@ -2830,13 +2829,12 @@ uint8_t mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
 #elif defined MPU6500
         if (lpa_freq > 640)
 #endif
-            /* At this point, the chip has not been re-configured, so the
-             * function can safely exit.
-             */
+            // At this point, the chip has not been re-configured, so the
+            // function can safely exit.
             return -1;
 
         if (!st.chip_cfg.int_motion_only) {
-            /* Store current settings for later. */
+            // Store current settings for later.
             if (st.chip_cfg.dmp_on) {
                 mpu_set_dmp_state(0);
                 st.chip_cfg.cache.dmp_on = 1;
@@ -2851,43 +2849,41 @@ uint8_t mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
         }
 
 #ifdef MPU6050
-        /* Disable hardware interrupts for now. */
+        // Disable hardware interrupts for now.
         set_int_enable(0);
 
-        /* Enter full-power accel-only mode. */
+        // Enter full-power accel-only mode.
         mpu_lp_accel_mode(0);
 
-        /* Override current LPF (and HPF) settings to obtain a valid accel
-         * reading.
-         */
+        // Override current LPF (and HPF) settings to obtain a valid accel
+        // reading.
         data[0] = INV_FILTER_256HZ_NOLPF2;
         if (i2c_write(st.hw->addr, st.reg->lpf, 1, data))
             return -1;
 
-        /* NOTE: Digital high pass filter should be configured here. Since this
-         * driver doesn't modify those bits anywhere, they should already be
-         * cleared by default.
-         */
+        // NOTE: Digital high pass filter should be configured here. Since this
+        // driver doesn't modify those bits anywhere, they should already be
+        // cleared by default.
 
-        /* Configure the device to send motion interrupts. */
-        /* Enable motion interrupt. */
+        // Configure the device to send motion interrupts.
+        // Enable motion interrupt.
         data[0] = BIT_MOT_INT_EN;
         if (i2c_write(st.hw->addr, st.reg->int_enable, 1, data))
             goto lp_int_restore;
 
-        /* Set motion interrupt parameters. */
+        // Set motion interrupt parameters.
         data[0] = thresh_hw;
         data[1] = time;
         if (i2c_write(st.hw->addr, st.reg->motion_thr, 2, data))
             goto lp_int_restore;
 
-        /* Force hardware to "lock" current accel sample. */
+        // Force hardware to "lock" current accel sample.
         delay_ms(5);
         data[0] = (st.chip_cfg.accel_fsr << 3) | BITS_HPF;
         if (i2c_write(st.hw->addr, st.reg->accel_cfg, 1, data))
             goto lp_int_restore;
 
-        /* Set up LP accel mode. */
+        // Set up LP accel mode.
         data[0] = BIT_LPA_CYCLE;
         if (lpa_freq == 1)
             data[1] = INV_LPA_1_25HZ;
@@ -2904,22 +2900,22 @@ uint8_t mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
         st.chip_cfg.int_motion_only = 1;
         return 0;
 #elif defined MPU6500
-        /* Disable hardware interrupts. */
+        // Disable hardware interrupts.
         set_int_enable(0);
 
-        /* Enter full-power accel-only mode, no FIFO/DMP. */
+        // Enter full-power accel-only mode, no FIFO/DMP.
         data[0] = 0;
         data[1] = 0;
         data[2] = BIT_STBY_XYZG;
         if (i2c_write(st.hw->addr, st.reg->user_ctrl, 3, data))
             goto lp_int_restore;
 
-        /* Set motion threshold. */
+        // Set motion threshold.
         data[0] = thresh_hw;
         if (i2c_write(st.hw->addr, st.reg->motion_thr, 1, data))
             goto lp_int_restore;
 
-        /* Set wake frequency. */
+        // Set wake frequency.
         if (lpa_freq == 1)
             data[0] = INV_LPA_1_25HZ;
         else if (lpa_freq == 2)
@@ -2943,17 +2939,17 @@ uint8_t mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
         if (i2c_write(st.hw->addr, st.reg->lp_accel_odr, 1, data))
             goto lp_int_restore;
 
-        /* Enable motion interrupt (MPU6500 version). */
+        // Enable motion interrupt (MPU6500 version).
         data[0] = BITS_WOM_EN;
         if (i2c_write(st.hw->addr, st.reg->accel_intel, 1, data))
             goto lp_int_restore;
 
-        /* Enable cycle mode. */
+        // Enable cycle mode.
         data[0] = BIT_LPA_CYCLE;
         if (i2c_write(st.hw->addr, st.reg->pwr_mgmt_1, 1, data))
             goto lp_int_restore;
 
-        /* Enable interrupt. */
+        // Enable interrupt.
         data[0] = BIT_MOT_INT_EN;
         if (i2c_write(st.hw->addr, st.reg->int_enable, 1, data))
             goto lp_int_restore;
@@ -2962,18 +2958,18 @@ uint8_t mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
         return 0;
 #endif
     } else {
-        /* Don't "restore" the previous state if no state has been saved. */
+        // Don't "restore" the previous state if no state has been saved.
         int ii;
         char *cache_ptr = (char*)&st.chip_cfg.cache;
         for (ii = 0; ii < sizeof(st.chip_cfg.cache); ii++) {
             if (cache_ptr[ii] != 0)
                 goto lp_int_restore;
         }
-        /* If we reach this point, motion interrupt mode hasn't been used yet. */
+        // If we reach this point, motion interrupt mode hasn't been used yet.
         return -1;
     }
 lp_int_restore:
-    /* Set to invalid values to ensure no I2C writes are skipped. */
+    // Set to invalid values to ensure no I2C writes are skipped.
     st.chip_cfg.gyro_fsr = 0xFF;
     st.chip_cfg.accel_fsr = 0xFF;
     st.chip_cfg.lpf = 0xFF;
@@ -2992,7 +2988,7 @@ lp_int_restore:
         mpu_set_dmp_state(1);
 
 #ifdef MPU6500
-    /* Disable motion interrupt (MPU6500 version). */
+    // Disable motion interrupt (MPU6500 version).
     data[0] = 0;
     if (i2c_write(st.hw->addr, st.reg->accel_intel, 1, data))
         goto lp_int_restore;
@@ -3001,13 +2997,15 @@ lp_int_restore:
     st.chip_cfg.int_motion_only = 0;
     return 0;
 }
- 
+*/
+
+// - 
 void mpu_set_gyro_bias_reg(long *gyro_bias)
 {
-    unsigned char data[2] ;//= {0, 0, 0, 0, 0, 0};
-    int i;
+    uint8_t data[2] ;//= {0, 0, 0, 0, 0, 0};
+    uint8_t i;
 	
-    for(i=0;i<3;i++) 
+    for (i = 0; i < 3; i++) 
 	{
     	//gyro_bias[i]= (-gyro_bias[i]);
 		data[0] = (gyro_bias[i] >> 8) & 0xff;
@@ -3042,7 +3040,8 @@ void mpu_set_gyro_bias_reg(long *gyro_bias)
  *  @param[in]  accel_bias  returned structure with the accel bias
  *  @return     0 if successful.
  */
-void  mpu_read_6050_accel_bias(long *accel_bias) {
+void mpu_read_6050_accel_bias(long *accel_bias)
+{
 	unsigned char data[2];
 	int i;
 	
@@ -3073,10 +3072,11 @@ void  mpu_read_6050_accel_bias(long *accel_bias) {
  *  @param[in]  accel_bias  New biases.
  *  @return     0 if successful.
  */
-void  mpu_set_accel_bias_6050_reg(const long *accel_bias, unsigned char relative)
+// -
+void mpu_set_accel_bias_6050_reg(const long *accel_bias, unsigned char relative)
 {
     //unsigned char data[6] = {0, 0, 0, 0, 0, 0};
-	unsigned char data[2] = {0, 0, 0, 0, 0, 0};
+	unsigned char data[2] = {0, 0};
     long accel_reg_bias[3] = {0, 0, 0};
     long mask = 0x0001;
     unsigned char mask_bit[3] = {0, 0, 0};
@@ -3123,11 +3123,4 @@ void  mpu_set_accel_bias_6050_reg(const long *accel_bias, unsigned char relative
     //i2c_write(st.hw->addr, 0x06, 2, &data[0]);
 	//i2c_write(st.hw->addr, 0x08, 2, &data[2]);
 	//i2c_write(st.hw->addr, 0x0A, 2, &data[4]);
-    return ;
 }
-
-
-/**
- *  @}
- */
-
