@@ -1,7 +1,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "tgtdefs.h"
+#include <reg24le1.h>
+
 #include "i2c.h"
 #include "nrfutils.h"
 
