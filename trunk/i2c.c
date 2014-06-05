@@ -5,6 +5,14 @@
 #include "i2c.h"
 #include "nrfutils.h"
 
+// this is basically the Nordic HAL I2C library
+
+#define I2C_PIN_SDA						P05
+#define I2C_PIN_SCL						P04
+#define I2C_CLEAR_SDA_SCL				(P0 &= 0xCF)
+#define I2C_OVERRIDE_SDA_SCL(a, b)		P0DIR = (P0DIR & 0xCF) | (a << 5) | (b << 4)
+
+// W2CON0 bits
 #define BROADCAST_ENABLE		7
 #define CLOCK_STOP				6
 #define X_STOP					5
@@ -14,6 +22,7 @@
 #define MASTER_SELECT			1
 #define WIRE_2_ENABLE			0
 
+// W2CON1 bits
 #define MASK_IRQ				5
 #define BROADCAST				4
 #define INT_STOP				3
@@ -21,13 +30,24 @@
 #define NACK					1
 #define DATA_READY				0
 
+#define I2C_ISSUE_START_COND	(W2CON0 |= _BV(X_START))
+#define I2C_ISSUE_STOP_COND		(W2CON0 |= _BV(X_STOP))
+#define I2C_WAIT_FOR_INTERRUPT	{ while(!SPIF); SPIF = 0; }
+#define I2C_WRITE(a)			W2DAT = (a)
+#define I2C_READ()				W2DAT
+
+#define I2C_DIR_READ		1
+#define I2C_DIR_WRITE		0
+
+void i2c_soft_reset(void);
+
 void i2c_init(void)
 {
 	W2CON0 |= _BV(WIRE_2_ENABLE);
-	W2CON0 |= _BV(MASTER_SELECT);
+	W2CON0 |= _BV(MASTER_SELECT) | _BV(CLOCK_FREQUENCY_0);	// 100kHz
 }
 
-static bool i2c_wait_data_ready(void)
+uint8_t i2c_wait_data_ready(void)
 {
 	uint8_t w2_status;
 	bool data_ready, ack_received;
@@ -39,47 +59,140 @@ static bool i2c_wait_data_ready(void)
 		delay_us(10);
 	} while (!data_ready);
 
+	return w2_status;
+}
+
+bool i2c_init_transfer(uint8_t address, uint8_t direction)
+{
+	uint8_t w2_status;
+
+	I2C_ISSUE_START_COND;
+	I2C_WRITE((address << 1) | direction);
+
+	w2_status = i2c_wait_data_ready();
+
+	if (w2_status & _BV(NACK))
+		return false;	// NACK received from slave or timeout
+
+	return true;		// ACK received from slave
+}
+
+bool i2c_write(uint8_t address, uint8_t reg_addr, uint8_t data_len, const uint8_t* data_ptr)
+{
+	bool ack_received;
+	uint8_t w2_status;
+		
+	ack_received = i2c_init_transfer(address, I2C_DIR_WRITE);
+
+	I2C_WRITE(reg_addr);
+	w2_status = i2c_wait_data_ready();
+	if (w2_status & _BV(NACK))
+		ack_received = false;
+	
+	while (data_len--  &&  ack_received)
+	{
+		I2C_WRITE(*data_ptr++);
+		w2_status = i2c_wait_data_ready();
+		if (w2_status & _BV(NACK))
+			ack_received = false;
+	}
+	
+	I2C_ISSUE_STOP_COND;
+
 	return ack_received;
 }
 
-static void i2c_wait_data_ready_simple(void)
+bool i2c_read(uint8_t address, uint8_t reg_addr, uint8_t data_len, uint8_t *data_ptr)
 {
-	while ((W2CON1 & _BV(DATA_READY)) == 0)
-		delay_us(10);
-}
+	uint8_t w2_status;
 
-int i2c_write(uint8_t slave_addr, uint8_t reg_addr, uint8_t length, const uint8_t* data)
-{
-	// start, address and write bit (0)
-	W2DAT = slave_addr << 1;
-	i2c_wait_data_ready_simple();
+	// start and write slave address
+	bool ack_received = i2c_init_transfer(address, I2C_DIR_WRITE);
 
-	W2DAT = reg_addr;
-	i2c_wait_data_ready_simple();
-	
-	while (length--)
+	// register address
+	I2C_WRITE(reg_addr);
+	w2_status = i2c_wait_data_ready();
+	if ((w2_status & _BV(NACK)) == 0)
 	{
-		W2DAT = *data++;
-		i2c_wait_data_ready();
+		// repeated start and slave address
+		if (i2c_init_transfer(address, I2C_DIR_READ))
+		{
+			while (data_len-- && ack_received)
+			{
+				if (data_len == 0)
+					I2C_ISSUE_STOP_COND;
+
+				w2_status = i2c_wait_data_ready();
+
+				*data_ptr++ = I2C_READ();
+				ack_received = !(w2_status & _BV(NACK));
+			}
+
+			return true;
+		} else {
+			// This situation (NACK received on bus while trying to read from a slave) leads to a deadlock in the 2-wire interface. 
+			i2c_soft_reset(); // Workaround for the deadlock
+		}
 	}
 
-	return 0;
+	return false;
 }
 
-int i2c_read(uint8_t slave_addr, uint8_t reg_addr, uint8_t length, uint8_t* data)
+void i2c_soft_reset(void)
 {
-	// start, address and read bit (1)
-	W2DAT = (slave_addr << 1) | 0x01;
-	i2c_wait_data_ready_simple();
+	uint8_t pulsecount, w2_freq;
 
-	W2DAT = reg_addr;
-	i2c_wait_data_ready_simple();
-	
-	while (length--)
+	// Store the selected 2-wire frequency 
+	w2_freq = W2CON0 & 0x0C;
+	// Prepare the GPIO's to take over SDA & SCL
+	I2C_CLEAR_SDA_SCL;
+	I2C_OVERRIDE_SDA_SCL(1, 1);
+	//P0DIR = 0xFF;
+
+	// Reset 2-wire. SCL goes high.
+	W2CON0 = 0x03;
+	W2CON0 = 0x07;
+
+	// Disable 2-wire.
+	W2CON0 = 0x06;
+
+	// SDA and SCL are now under software control, and both are high. 
+	// Complete first SCL pulse.
+	//P0DIR = 0xEF;
+	I2C_OVERRIDE_SDA_SCL(1, 0);
+
+	// SCL low
+	delay_us(5);
+	//P0DIR = 0xCF;
+	I2C_OVERRIDE_SDA_SCL(0, 0);
+
+	// SDA low
+	// Create SCL pulses for 7 more data bits and ACK/NACK
+	delay_us(5);
+	for (pulsecount = 0; pulsecount < 8; pulsecount++ )
 	{
-		W2DAT = *data++;
-		i2c_wait_data_ready();
+		//P0DIR = 0xDF;
+		I2C_OVERRIDE_SDA_SCL(0, 1);
+		delay_us(5);
+		//P0DIR = 0xCF;
+		I2C_OVERRIDE_SDA_SCL(0, 0);
+		delay_us(5);
 	}
 
-	return 0;
+	// Generating stop condition by driving SCL high
+	delay_us(5);
+	//P0DIR = 0xDF;
+	I2C_OVERRIDE_SDA_SCL(0, 1);
+
+	// Drive SDA high
+	delay_us(5);
+	//P0DIR = 0xFF;
+	I2C_OVERRIDE_SDA_SCL(1, 1);
+
+	// Work-around done. Return control to 2-wire.
+	W2CON0 = 0x07;
+
+	// Reset 2-wire and return to master mode at the frequency selected before calling this function
+	W2CON0 = 0x03;
+	W2CON0 = 0x03 | w2_freq;
 }
