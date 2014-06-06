@@ -1,12 +1,17 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 
 #include <reg24le1.h>
+#include <nrfdbg.h>
+#include <nrfutils.h>
 
 #include "i2c.h"
-#include "nrfutils.h"
 
-// this is basically the Nordic HAL I2C library
+// this is based on the Nordic HAL I2C library, and is specific to MPU-6050
+
+#define MPU_ADDR_READ			0xD1
+#define MPU_ADDR_WRITE			0xD0
 
 #define I2C_PIN_SDA						P05
 #define I2C_PIN_SCL						P04
@@ -46,6 +51,9 @@ void i2c_init(void)
 {
 	W2CON0 |= _BV(WIRE_2_ENABLE);
 	W2CON0 |= _BV(MASTER_SELECT) | _BV(CLOCK_FREQUENCY_0);	// 100kHz
+	//W2CON0 |= _BV(MASTER_SELECT) | _BV(CLOCK_FREQUENCY_1);	// 400kHz
+	
+	I2C_ISSUE_STOP_COND;
 }
 
 uint8_t i2c_wait_data_ready(void)
@@ -63,12 +71,12 @@ uint8_t i2c_wait_data_ready(void)
 	return w2_status;
 }
 
-bool i2c_init_transfer(uint8_t address, uint8_t direction)
+bool i2c_init_transfer(uint8_t address)
 {
 	uint8_t w2_status;
 
 	I2C_ISSUE_START_COND;
-	I2C_WRITE((address << 1) | direction);
+	I2C_WRITE(address);
 
 	w2_status = i2c_wait_data_ready();
 
@@ -78,12 +86,12 @@ bool i2c_init_transfer(uint8_t address, uint8_t direction)
 	return true;		// ACK received from slave
 }
 
-bool i2c_write(uint8_t address, uint8_t reg_addr, uint8_t data_len, const uint8_t* data_ptr)
+bool i2c_write(uint8_t reg_addr, uint8_t data_len, const uint8_t* data_ptr)
 {
 	bool ack_received;
 	uint8_t w2_status;
 		
-	ack_received = i2c_init_transfer(address, I2C_DIR_WRITE);
+	ack_received = i2c_init_transfer(MPU_ADDR_WRITE);
 
 	I2C_WRITE(reg_addr);
 	w2_status = i2c_wait_data_ready();
@@ -103,12 +111,12 @@ bool i2c_write(uint8_t address, uint8_t reg_addr, uint8_t data_len, const uint8_
 	return ack_received;
 }
 
-bool i2c_read(uint8_t address, uint8_t reg_addr, uint8_t data_len, uint8_t *data_ptr)
+bool i2c_read(uint8_t reg_addr, uint8_t data_len, uint8_t *data_ptr)
 {
 	uint8_t w2_status;
 
 	// start and write slave address
-	bool ack_received = i2c_init_transfer(address, I2C_DIR_WRITE);
+	bool ack_received = i2c_init_transfer(MPU_ADDR_WRITE);
 
 	// register address
 	I2C_WRITE(reg_addr);
@@ -116,7 +124,7 @@ bool i2c_read(uint8_t address, uint8_t reg_addr, uint8_t data_len, uint8_t *data
 	if ((w2_status & _BV(NACK)) == 0)
 	{
 		// repeated start and slave address
-		if (i2c_init_transfer(address, I2C_DIR_READ))
+		if (i2c_init_transfer(MPU_ADDR_READ))
 		{
 			while (data_len-- && ack_received)
 			{
@@ -170,7 +178,7 @@ void i2c_soft_reset(void)
 	// SDA low
 	// Create SCL pulses for 7 more data bits and ACK/NACK
 	delay_us(5);
-	for (pulsecount = 0; pulsecount < 8; pulsecount++ )
+	for (pulsecount = 0; pulsecount < 8; ++pulsecount)
 	{
 		//P0DIR = 0xDF;
 		I2C_OVERRIDE_SDA_SCL(0, 1);

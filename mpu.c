@@ -1,12 +1,12 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include <reg24le1.h>
 
 #include "i2c.h"
 #include "nrfutils.h"
-
-#define MPU_ADDR			0x68
 
 // the MPU-6050 registers
 #define REG_rate_div       0x19
@@ -80,7 +80,7 @@
 
 uint8_t mpu_write_byte(uint8_t reg_addr, uint8_t val)
 {
-	return i2c_write(MPU_ADDR, reg_addr, 1, &val) ? 0 : 0xff;
+	return i2c_write(reg_addr, 1, &val) ? 0 : 0xff;
 }
 
 bool mpu_init(void)
@@ -103,7 +103,7 @@ bool mpu_init(void)
 	
 	// mpu_set_lpf(42);
 	mpu_write_byte(REG_lpf, 3);
-	
+
 	//mpu_set_sample_rate(50);
 	//mpu_configure_fifo(0);
     //
