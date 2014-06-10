@@ -495,7 +495,7 @@ void loop()
 					cz = cz / (float)sampleCount;
 					dX = dY = dZ = 0.0;
 					driftSamples = -2;
-					recalibrateSamples = 200;// reduce calibrate next time around
+					recalibrateSamples = 200;	// reduce calibrate next time around
 					if (outputMode == OMT_UI)
 					{
 						//printf("I\t");
