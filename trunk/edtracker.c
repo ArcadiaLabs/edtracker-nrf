@@ -88,6 +88,7 @@ int main(void)
 								quat[0], quat[1], quat[2], quat[3]);
 			*/
 			
+			/*
 			if (!more)
 			{
 				int32_t iX, iY, iZ;
@@ -121,11 +122,10 @@ int main(void)
 				iY = newY * 4.0;
 				iZ = newZ * 4.0;
 
-				/*
 				if (dbgEmpty())
 					printf("%04x %04x %04x\n", iX >> 16, iY >> 16, iZ >> 16);
-					*/
 			}
+			*/
 		}
 	}
 }
