@@ -8,6 +8,7 @@
 #include <nrfdbg.h>
 
 #include "i2c.h"
+#include "rf_protocol.h"
 #include "mpu_simple.h"
 #include "mpu_regs.h"
 
@@ -54,10 +55,9 @@ float constrain(float val, float min, float max)
 
 int main(void)
 {
-	int16_t gyro[3], accel[3];
 	uint8_t more = 0;
-	int32_t quat[4];
 	bool had_int = false;
+	mpu_packet_t pckt;
 	
 	hw_init();
 	
@@ -78,7 +78,7 @@ int main(void)
 		
 		if (had_int  ||  more)
 		{
-			dmp_read_fifo(gyro, accel, quat, &more);
+			dmp_read_fifo(&pckt, &more);
 
 			/*
 			if (dbgEmpty())
