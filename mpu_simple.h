@@ -4,6 +4,6 @@
 bool mpu_init(void);
 bool dmp_init(void);
 
-bool dmp_read_fifo(int16_t* gyro, int16_t* accel, int32_t* quat, uint8_t* more);
+bool dmp_read_fifo(mpu_packet_t* pckt, uint8_t* more);
 
 #endif	// MPU_H
