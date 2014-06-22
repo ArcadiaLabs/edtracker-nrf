@@ -8,6 +8,7 @@
 
 #include "i2c.h"
 #include "mpu_regs.h"
+#include "rf_protocol.h"
 
 bool mpu_write_byte(uint8_t reg_addr, uint8_t val)
 {
@@ -693,7 +694,7 @@ bool mpu_read_fifo_stream(uint16_t length, uint8_t* d, uint8_t* more)
 	return true;
 }
 
-bool dmp_read_fifo(int16_t* gyro, int16_t* accel, int32_t* quat, uint8_t* more)
+bool dmp_read_fifo(mpu_packet_t* pckt, uint8_t* more)
 {
     uint8_t fifo_data[MAX_PACKET_LENGTH];
     uint8_t ii = 0, i;
@@ -701,13 +702,18 @@ bool dmp_read_fifo(int16_t* gyro, int16_t* accel, int32_t* quat, uint8_t* more)
 	if (!mpu_read_fifo_stream(MAX_PACKET_LENGTH, fifo_data, more))
 		return true;
 	
-	for (i = 0; i < 4; i++)
-	{
-		quat[i] = ((long)fifo_data[i * 4] << 24)
-					| ((long)fifo_data[i * 4 + 1] << 16)
-					| ((long)fifo_data[i * 4 + 2] << 8)
-					| fifo_data[i * 4 + 3];
-	}
+	pckt->quat[0] = * (uint16_t*) (fifo_data +  0);
+	pckt->quat[1] = * (uint16_t*) (fifo_data +  4);
+	pckt->quat[2] = * (uint16_t*) (fifo_data +  8);
+	pckt->quat[3] = * (uint16_t*) (fifo_data + 12);
+	
+	//for (i = 0; i < 4; i++)
+	//{
+	//	quat[i] = ((long)fifo_data[i * 4] << 24)
+	//				| ((long)fifo_data[i * 4 + 1] << 16)
+	//				| ((long)fifo_data[i * 4 + 2] << 8)
+	//				| fifo_data[i * 4 + 3];
+	//}
 	
 	/*
 # define QUAT_ERROR_THRESH			(1L<<24)
@@ -737,12 +743,12 @@ bool dmp_read_fifo(int16_t* gyro, int16_t* accel, int32_t* quat, uint8_t* more)
 	ii += 16;
 	
 	for (i = 0; i < 3; i++)
-		accel[i] = ((int16_t)fifo_data[ii+i*2] << 8) | fifo_data[ii+i*2+1];
+		pckt->accel[i] = ((int16_t)fifo_data[ii+i*2] << 8) | fifo_data[ii+i*2+1];
 
 	ii += 6;
 
 	for (i = 0; i < 3; i++)
-		gyro[i] = ((int16_t)fifo_data[ii+i*2] << 8) | fifo_data[ii+i*2+1];
+		pckt->gyro[i] = ((int16_t)fifo_data[ii+i*2] << 8) | fifo_data[ii+i*2+1];
 
 	ii += 6;
 
