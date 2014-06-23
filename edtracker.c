@@ -11,6 +11,8 @@
 #include "rf_protocol.h"
 #include "mpu_simple.h"
 #include "mpu_regs.h"
+#include "sleeping.h"
+#include "rf_head.h"
 
 void hw_init()
 {
@@ -40,6 +42,9 @@ void hw_init()
 	}
 	
 	dbgFlush();
+	
+	// init the radio
+	rf_head_init();
 }
 
 float constrain(float val, float min, float max)
