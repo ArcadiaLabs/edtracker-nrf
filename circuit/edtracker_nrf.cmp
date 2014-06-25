@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by Cvpcb (2014-06-23 BZR 4954)-product   date = 25/06/2014 14:15:01
+Cmp-Mod V01 Created by Cvpcb (2014-06-23 BZR 4954)-product   date = 6/25/2014 8:22:20 PM
 
 BeginCmp
 TimeStamp = /53A876AC;
@@ -85,10 +85,17 @@ IdModule  = Resistors_SMD:Resistor_SMD0805_HandSoldering;
 EndCmp
 
 BeginCmp
-TimeStamp = /53A99AD7;
+TimeStamp = /53AB20EC;
 Reference = SW1;
 ValeurCmp = SW_PUSH;
 IdModule  = edtracker_nrf:TACTILE-PTH;
+EndCmp
+
+BeginCmp
+TimeStamp = /53AAC4C3;
+Reference = SW2;
+ValeurCmp = SWITCH_INV;
+IdModule  = Pin_Headers:Pin_Header_Angled_1x03;
 EndCmp
 
 BeginCmp
@@ -109,7 +116,7 @@ BeginCmp
 TimeStamp = /53A876E3;
 Reference = U3;
 ValeurCmp = UART_CONN;
-IdModule  = edtracker_nrf:Pin_Header_Angled_1x03;
+IdModule  = edtracker_nrf:Pin_Header_1x04;
 EndCmp
 
 EndListe
