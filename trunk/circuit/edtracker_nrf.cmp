@@ -1,0 +1,115 @@
+Cmp-Mod V01 Created by Cvpcb (2014-06-23 BZR 4954)-product   date = 25/06/2014 14:15:01
+
+BeginCmp
+TimeStamp = /53A876AC;
+Reference = BT1;
+ValeurCmp = BATTERY_CR2032;
+IdModule  = edtracker_nrf:CR2032_THT;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A9ABA8;
+Reference = BT2;
+ValeurCmp = BATTERY;
+IdModule  = edtracker_nrf:BATTERY_EXT;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A9C242;
+Reference = C1;
+ValeurCmp = C;
+IdModule  = Capacitors_SMD:c_0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A9BE51;
+Reference = C2;
+ValeurCmp = CP1;
+IdModule  = Capacitors_SMD:c_1210;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A99C66;
+Reference = D1;
+ValeurCmp = LED;
+IdModule  = LEDs:LED-3MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A99CDF;
+Reference = D2;
+ValeurCmp = LED;
+IdModule  = LEDs:LED-3MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A99CF8;
+Reference = D3;
+ValeurCmp = LED;
+IdModule  = LEDs:LED-3MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A87AFB;
+Reference = M1;
+ValeurCmp = NRF24LE1_MODULE_SMALL;
+IdModule  = edtracker_nrf:NRF24LE1_SMALL;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A9CF7B;
+Reference = Q1;
+ValeurCmp = TPS1101D;
+IdModule  = SOIC_Packages:SOIC-8_N;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A99DAC;
+Reference = R1;
+ValeurCmp = R;
+IdModule  = Resistors_SMD:Resistor_SMD0805_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A99E23;
+Reference = R2;
+ValeurCmp = R;
+IdModule  = Resistors_SMD:Resistor_SMD0805_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A99E55;
+Reference = R3;
+ValeurCmp = R;
+IdModule  = Resistors_SMD:Resistor_SMD0805_HandSoldering;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A99AD7;
+Reference = SW1;
+ValeurCmp = SW_PUSH;
+IdModule  = edtracker_nrf:TACTILE-PTH;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A87671;
+Reference = U1;
+ValeurCmp = NRF24LE1_PROG;
+IdModule  = edtracker_nrf:Pin_Header_Angled_2x04;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A8761E;
+Reference = U2;
+ValeurCmp = MPU-6050;
+IdModule  = edtracker_nrf:MPU6050;
+EndCmp
+
+BeginCmp
+TimeStamp = /53A876E3;
+Reference = U3;
+ValeurCmp = UART_CONN;
+IdModule  = edtracker_nrf:Pin_Header_Angled_1x03;
+EndCmp
+
+EndListe
