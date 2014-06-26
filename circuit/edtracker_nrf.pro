@@ -1,4 +1,4 @@
-update=6/23/2014 7:50:15 PM
+update=26/06/2014 09:50:20
 version=1
 last_client=kicad
 [cvpcb]
@@ -73,3 +73,4 @@ LibName28=atmel
 LibName29=contrib
 LibName30=valves
 LibName31=edtracker_nrf
+LibName32=nrf24le1

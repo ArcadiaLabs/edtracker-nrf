@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by Cvpcb (2014-06-23 BZR 4954)-product   date = 6/25/2014 8:22:20 PM
+Cmp-Mod V01 Created by Cvpcb (2014-06-23 BZR 4954)-product   date = 26/06/2014 10:30:56
 
 BeginCmp
 TimeStamp = /53A876AC;
@@ -18,7 +18,7 @@ BeginCmp
 TimeStamp = /53A9C242;
 Reference = C1;
 ValeurCmp = C;
-IdModule  = Capacitors_SMD:c_0805;
+IdModule  = Capacitors_SMD:c_1210;
 EndCmp
 
 BeginCmp
@@ -52,7 +52,7 @@ EndCmp
 BeginCmp
 TimeStamp = /53A87AFB;
 Reference = M1;
-ValeurCmp = NRF24LE1_MODULE_SMALL;
+ValeurCmp = NRF24LE1_SMALL;
 IdModule  = edtracker_nrf:NRF24LE1_SMALL;
 EndCmp
 
@@ -115,8 +115,8 @@ EndCmp
 BeginCmp
 TimeStamp = /53A876E3;
 Reference = U3;
-ValeurCmp = UART_CONN;
-IdModule  = edtracker_nrf:Pin_Header_1x04;
+ValeurCmp = UART;
+IdModule  = edtracker_nrf:Pin_Header_Straight_1x03;
 EndCmp
 
 EndListe
