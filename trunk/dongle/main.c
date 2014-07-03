@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
 
 #include "reg24lu1.h"
 
@@ -13,10 +14,22 @@
 
 #include "usb.h"
 #include "usb_regs.h"
+#include "hw_defs.h"
 
 #include "nrfdbg.h"
 
 #define RECV_BUFF_SIZE		32
+
+float constrain(float val, float min, float max)
+{
+	if (val < min)
+		return min;
+		
+	if (val > max)
+		return max;
+		
+	return val;
+}
 
 void main()
 {
@@ -50,15 +63,48 @@ void main()
 
 		if (bytes_received  &&  dbgEmpty())
 		{
-			// __xdata txt_buff[80];
-			
 			// make a text message from the received packet
 			mpu_packet_t* pckt = (mpu_packet_t*) recv_buffer;
 		
+			int32_t iX, iY, iZ;
+			float newZ, newY, newX;
+			float qw, qx, qy, qz;
+			
+			qw = (float)(pckt->quat[0]) / 16384.0f;
+			qx = (float)(pckt->quat[1]) / 16384.0f;
+			qy = (float)(pckt->quat[2]) / 16384.0f;
+			qz = (float)(pckt->quat[3]) / 16384.0f;
+
+			// Calculate Yaw/Pitch/Roll
+			// Update client with yaw/pitch/roll and tilt-compensated magnetometer data
+
+			// use some code to convert to R P Y
+			newZ =  atan2f(2.0 * (qy * qz + qw * qx), qw * qw - qx * qx - qy * qy + qz * qz);
+			newY = -asinf(-2.0 * (qx * qz - qw * qy));
+			newX = -atan2f(2.0 * (qx * qy + qw * qz), qw * qw + qx * qx - qy * qy - qz * qz);
+		
+			newX = newX * 10430.06;
+			newY = newY * 10430.06;
+			newZ = newZ * 10430.06;
+			
+			// clamp at 90 degrees left and right
+			newX = constrain(newX, -16383.0, 16383.0);
+			newY = constrain(newY, -16383.0, 16383.0);
+			newZ = constrain(newZ, -16383.0, 16383.0);
+
+			// and scale to out target range plus a 'sensitivity' factor;
+			iX = newX * 4.0;
+			iY = newY * 4.0;
+			iZ = newZ * 4.0;
+		
+			printf("%04x %04x %04x\n", iX, iY, iZ);
+			
+			/*
 			printf("%04x %04x %04x - %04x %04x %04x - %04x %04x %04x %04x\n",
 									pckt->gyro[0], pckt->gyro[1], pckt->gyro[2],
 									pckt->accel[0], pckt->accel[1], pckt->accel[2],
 									pckt->quat[0], pckt->quat[1], pckt->quat[2], pckt->quat[3]);
+			*/
 		}
 
 		/*

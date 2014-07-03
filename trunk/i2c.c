@@ -15,32 +15,32 @@
 #define MPU_ADDR_READ			0xD1
 #define MPU_ADDR_WRITE			0xD0
 
-#define I2C_SDA			P05
-#define I2C_SCL			P04
+#define I2C_SDA			P13
+#define I2C_SCL			P12
 
-#define I2C_SDA_BIT		5
-#define I2C_SCL_BIT		4
+#define I2C_SDA_BIT		3
+#define I2C_SCL_BIT		2
 
-#define i2c_sda_pull()		{ P0DIR &= ~_BV(I2C_SDA_BIT); I2C_SDA = 0; }
+#define i2c_sda_pull()		{ P1DIR &= ~_BV(I2C_SDA_BIT); I2C_SDA = 0; }
 /*void i2c_sda_pull(void)
 {
 	P0DIR &= ~_BV(5);	// output
 	I2C_SDA = 0;		// drive low
 }*/
 
-#define i2c_sda_release()		P0DIR |= _BV(I2C_SDA_BIT)
+#define i2c_sda_release()		P1DIR |= _BV(I2C_SDA_BIT)
 /*void i2c_sda_release(void)
 {
 	P0DIR |= _BV(I2C_SDA_BIT);	// input
 }*/
 
-#define i2c_scl_release()		P0DIR |= _BV(I2C_SCL_BIT)
+#define i2c_scl_release()		P1DIR |= _BV(I2C_SCL_BIT)
 /*void i2c_scl_release(void)
 {
 	P0DIR |= _BV(I2C_SCL_BIT);	// input
 }*/
 
-#define i2c_scl_pull()			{ P0DIR &= ~_BV(I2C_SCL_BIT); I2C_SCL = 0; }
+#define i2c_scl_pull()			{ P1DIR &= ~_BV(I2C_SCL_BIT); I2C_SCL = 0; }
 /*void i2c_scl_pull(void)
 {
 	P0DIR &= ~_BV(I2C_SCL_BIT);	// output
@@ -146,7 +146,7 @@ uint8_t i2c_read_byte(bool should_ack)
 void i2c_init(void)
 {
 	// inputs
-	P0DIR |= _BV(I2C_SDA_BIT) | _BV(I2C_SCL_BIT);
+	P1DIR |= _BV(I2C_SDA_BIT) | _BV(I2C_SCL_BIT);
 	
 	i2c_stop();
 }

@@ -13,15 +13,22 @@
 #include "mpu_regs.h"
 #include "sleeping.h"
 #include "rf_head.h"
+#include "edtracker.h"
 
 void hw_init()
 {
 	P0DIR |= _BV(6);	// MPU interrupt input
 	
-	dbgInit();
-	puts("\ni live...");
+	P0DIR &= 0x18;		// LEDs are outputs
 
+	LED_RED		= 0;
+	LED_YELLOW	= 0;
+	LED_GREEN	= 0;
+	
+	dbgInit();
 	i2c_init();
+
+	LED_RED = 1;
 	
 	if (!mpu_init())
 	{
@@ -43,29 +50,22 @@ void hw_init()
 	
 	dbgFlush();
 	
-	// init the radio
-	rf_head_init();
-}
+	rf_head_init();		// init the radio
+	
+	init_sleep();		// we need to wake up from RFIRQ
 
-float constrain(float val, float min, float max)
-{
-	if (val < min)
-		return min;
-		
-	if (val > max)
-		return max;
-		
-	return val;
+	LED_RED = 0;
 }
 
 int main(void)
 {
 	uint8_t more = 0;
+	uint8_t fifo_cnt = 0;
 	bool had_int = false;
 	mpu_packet_t pckt;
-	
+
 	hw_init();
-	
+
 	for (;;)
 	{
 		if (P06 == 0)
@@ -83,14 +83,31 @@ int main(void)
 		
 		if (had_int  ||  more)
 		{
+			LED_YELLOW = 1;
 			dmp_read_fifo(&pckt, &more);
+			
+			if (fifo_cnt++ == 10)
+			{
+				if (rf_head_send_message(&pckt, sizeof(pckt)))
+				{
+					LED_GREEN = 1;
+					LED_RED = 0;
+				} else {
+					LED_GREEN = 0;
+					LED_RED = 1;
+				}
+				
+				fifo_cnt = 0;
+			}
 
+			LED_YELLOW = 0;
+			
 			/*
 			if (dbgEmpty())
-				printf("%04x %04x %04x  %04x %04x %04x  %08lx %08lx %08lx %08lx\n", 
-								gyro[0], gyro[1], gyro[2],
-								accel[0], accel[1], accel[2],
-								quat[0], quat[1], quat[2], quat[3]);
+				printf("%04x %04x %04x - %04x %04x %04x - %04x %04x %04x %04x\n", 
+								pckt.gyro[0], pckt.gyro[1], pckt.gyro[2],
+								pckt.accel[0], pckt.accel[1], pckt.accel[2],
+								pckt.quat[0], pckt.quat[1], pckt.quat[2], pckt.quat[3]);
 			*/
 			
 			/*
