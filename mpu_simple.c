@@ -70,7 +70,7 @@ bool mpu_init(void)
 	mpu_write_byte(PWR_MGMT_1, 0x80);		// reset
 	delay_ms(100);
 	mpu_write_byte(PWR_MGMT_1, 0);			// wakeup
-
+	
 	mpu_write_byte(GYRO_CONFIG, 0x18);
 	mpu_write_byte(ACCEL_CONFIG, 0x00);
 	mpu_write_byte(SMPLRT_DIV, 0x13);

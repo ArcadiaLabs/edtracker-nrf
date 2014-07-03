@@ -5,6 +5,7 @@
 #include "tgtdefs.h"
 #include "rf_protocol.h"
 #include "nRF24L.h"
+#include "hw_defs.h"
 
 #define NRF_CHECK_MODULE
 
