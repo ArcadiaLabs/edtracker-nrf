@@ -7,8 +7,11 @@
 #include <nrfutils.h>
 
 #include "i2c.h"
+#include "edtracker.h"
 #include "mpu_regs.h"
+#include "mpu_defines.h"
 #include "rf_protocol.h"
+#include "nrfdbg.h"
 
 bool mpu_write_byte(uint8_t reg_addr, uint8_t val)
 {
@@ -65,6 +68,16 @@ uint8_t mpu_read_byte(uint8_t reg_addr, uint8_t* val)
 #define BIT_STBY_XYZA       (BIT_STBY_XA | BIT_STBY_YA | BIT_STBY_ZA)
 #define BIT_STBY_XYZG       (BIT_STBY_XG | BIT_STBY_YG | BIT_STBY_ZG)
 
+#define INV_FILTER_256HZ_NOLPF2		0
+#define INV_FILTER_188HZ			1
+#define INV_FILTER_98HZ				2
+#define INV_FILTER_42HZ				3
+#define INV_FILTER_20HZ				4
+#define INV_FILTER_10HZ				5
+#define INV_FILTER_5HZ				6
+#define INV_FILTER_2100HZ_NOLPF		7
+#define NUM_FILTER					8
+
 bool mpu_init(void)
 {
 	mpu_write_byte(PWR_MGMT_1, 0x80);		// reset
@@ -73,9 +86,9 @@ bool mpu_init(void)
 	
 	mpu_write_byte(GYRO_CONFIG, 0x18);
 	mpu_write_byte(ACCEL_CONFIG, 0x00);
-	mpu_write_byte(SMPLRT_DIV, 0x13);
-	mpu_write_byte(CONFIG, 0x04);
-	mpu_write_byte(CONFIG, 0x03);
+	mpu_write_byte(SMPLRT_DIV, 19);			// 50hz
+	mpu_write_byte(CONFIG, INV_FILTER_20HZ);
+	//mpu_write_byte(CONFIG, 0x03);
 	//mpu_write_byte(INT_ENABLE, 0x00);
 	mpu_write_byte(USER_CTRL, 0x20);
 	mpu_write_byte(INT_PIN_CFG, 0x80);
@@ -94,8 +107,8 @@ bool mpu_init(void)
 	delay_ms(50);
 	//mpu_write_byte(INT_ENABLE, 0x00);
 	mpu_write_byte(FIFO_EN, 0x78);
-	mpu_write_byte(SMPLRT_DIV, 0x04);
-	mpu_write_byte(CONFIG, 0x02);
+	//mpu_write_byte(SMPLRT_DIV, 0x04);
+	//mpu_write_byte(CONFIG, INV_FILTER_20HZ);	// was 0x02
 	
 	return true;
 }
@@ -451,7 +464,6 @@ void mpu_read_6050_accel_bias(int32_t* accel_bias)
  *  these biases will be added to the factory-supplied values. Bias inputs are LSB
  *  in +-8G format.
  *  @param[in]  accel_bias  New biases.
- *  @return     0 if successful.
  */
 void mpu_set_accel_bias_6050_reg(const int32_t* accel_bias, uint8_t relative)
 {
@@ -582,13 +594,15 @@ bool dmp_enable_feature(void)
 	
 	reset_fifo();
 
+	// this is dmp_set_fifo_rate()
 	{
-	const uint8_t __code arr[] = {0x00,0x00};
-	mpu_write_mem(534, sizeof arr, arr);
+	const uint8_t __code arr[] = {0x00,0x03};		// 50hz DMP sample rate
+	mpu_write_mem(D_0_22, sizeof arr, arr);
 	}
+	
 	{
 	const uint8_t __code arr[] = {0xFE,0xF2,0xAB,0xC4,0xAA,0xF1,0xDF,0xDF,0xBB,0xAF,0xDF,0xDF};
-	mpu_write_mem(2753, sizeof arr, arr);
+	mpu_write_mem(CFG_6, sizeof arr, arr);
 	}
 
 	return true;
@@ -596,11 +610,11 @@ bool dmp_enable_feature(void)
 
 void loadBiases(void)
 {
-	int32_t gyro_bias[3] =	{-4587530, -370409404, 111608439};
-	int32_t accel_bias[3] =	{-1, -1, -1};
+	int32_t gBias[3] = {-78, -102, 65};
+	int32_t aBias[3] = {65742, 132, -20};
 	
-	mpu_set_gyro_bias_reg(gyro_bias);
-	mpu_set_accel_bias_6050_reg(accel_bias, true);
+	mpu_set_gyro_bias_reg(gBias);
+	mpu_set_accel_bias_6050_reg(aBias, true);
 }
 
 bool dmp_init(void)
@@ -627,7 +641,7 @@ bool dmp_init(void)
 
 	// enable DMP
 	mpu_write_byte(INT_ENABLE, 0x00);
-	mpu_write_byte(SMPLRT_DIV, 0x04);
+	//mpu_write_byte(SMPLRT_DIV, 0x04);
 	mpu_write_byte(FIFO_EN, 0x00);
 	mpu_write_byte(INT_ENABLE, 0x02);
 	mpu_write_byte(INT_ENABLE, 0x00);
@@ -657,7 +671,7 @@ bool mpu_read_fifo_stream(uint16_t length, uint8_t* d, uint8_t* more)
 
 	if (fifo_count < length)
 	{
-		more[0] = 0;
+		*more = 0;
 		return false;
 	}
 
@@ -669,7 +683,7 @@ bool mpu_read_fifo_stream(uint16_t length, uint8_t* d, uint8_t* more)
 
 		if (tmp[0] & BIT_FIFO_OVERFLOW)
 		{
-			puts("fifo overflow");
+			puts("FO");
 			
 			/*
 			mpu_write_byte(INT_ENABLE, 0x00);
@@ -689,7 +703,7 @@ bool mpu_read_fifo_stream(uint16_t length, uint8_t* d, uint8_t* more)
 	if (!i2c_read(FIFO_R_W, length, d))
 		return false;
 
-	more[0] = fifo_count / length - 1;
+	*more = fifo_count / length - 1;
 
 	return true;
 }
@@ -753,4 +767,103 @@ bool dmp_read_fifo(mpu_packet_t* pckt, uint8_t* more)
 	ii += 6;
 
     return true;
+}
+
+void msg(char* m, int32_t* v)
+{
+	m, v;
+	//printf("%s %li   %li   %li\n", m, v[0], v[1], v[2]);
+}
+
+void update_bias(void)
+{
+	uint8_t more;
+	uint16_t s16cnt;
+	mpu_packet_t pckt;
+	int32_t gBias[3], aBias[3], fBias[3];
+
+	puts("update_bias()...");
+	
+	mpu_read_6050_accel_bias(fBias);
+	mpu_read_6050_accel_bias(aBias);
+	
+	aBias[0] = 65750;
+	
+	msg("faccel ", fBias);
+	
+	gBias[0] = 0;
+	gBias[1] = 0;
+	gBias[2] = 0;
+
+	// set gyro to zero and accel to factory bias
+	mpu_set_gyro_bias_reg(gBias);
+
+	delay_ms(100);
+
+	LED_GREEN = 0;
+	LED_YELLOW = 0;
+	LED_RED = 0;
+	
+	for (s16cnt = 0; s16cnt < 500; s16cnt++)
+	{
+		//physical values in Q16.16 format
+		//mpu_get_biases(gBias, aBias);
+
+		while (MPU_IRQ == 1)
+			dbgPoll();
+		while (MPU_IRQ == 0)
+			;
+		
+		do {
+			dmp_read_fifo(&pckt, &more);
+		} while (more);
+
+		if (pckt.accel[0] >= 1)
+			aBias[0] += 1;
+		else if (pckt.accel[0] <= -1)
+			aBias[0] -= 1;
+
+		if (pckt.accel[1] >= 1)
+			aBias[1]++;
+		else if (pckt.accel[1] <= -1)
+			aBias[1]--;
+
+		if (pckt.accel[2] > 16384)
+			aBias[2]++;
+		else if (pckt.accel[2] < 16384)
+			aBias[2]--;
+
+		if (pckt.gyro[0] > 1)
+			gBias[0]--;
+		else if (pckt.gyro[0] < -1)
+			gBias[0]++;
+
+		if (pckt.gyro[1] > 1)
+			gBias[1]--;
+		else if (pckt.gyro[1] < -1)
+			gBias[1]++;
+
+		if (pckt.gyro[2] > 1)
+			gBias[2]--;
+		else if (pckt.gyro[2] < -1)
+			gBias[2]++;
+
+		//msg("gyro ", gBias);
+		//msg("accel ", aBias);
+
+		// push the factory bias back
+		mpu_set_accel_bias_6050_reg(fBias, 0);
+		mpu_set_gyro_bias_reg(gBias);
+		mpu_set_accel_bias_6050_reg(aBias, 1);
+		
+		// delay_ms(10);
+	}
+
+	msg("gyro ", gBias);
+	msg("accel ", aBias);
+
+	dbgFlush();
+	
+	//saveBias();
+	//loadBiases();
 }

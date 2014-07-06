@@ -101,9 +101,9 @@ bool i2c_read_bit(void)
 	bool result;
 	
 	i2c_sda_release();		// SDA lo
-	/*__asm
-	nop
-	__endasm;*/
+	//__asm
+	//nop
+	//__endasm;
 	i2c_scl_release();		// SCL hi
 	result = I2C_SDA;
 	i2c_scl_pull();			// SCL lo
@@ -111,7 +111,7 @@ bool i2c_read_bit(void)
 	return result;
 }
 
-bool i2c_write_byte(uint8_t val)
+bool i2c_write_byte(uint8_t __data val)
 {
 	i2c_write_bit(val & 0x80);
 	i2c_write_bit(val & 0x40);

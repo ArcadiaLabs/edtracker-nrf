@@ -1,8 +1,9 @@
-TARGET   = edtracker
-CFLAGS   = --model-large -Imcu-lib -DNRF24LE1 -DDBG_MODE=0
-LFLAGS   = --code-loc 0x0000 --code-size 0x4000 --xram-loc 0x0000 --xram-size 0x400
-ASFLAGS  = -plosgff
-RELFILES = edtracker.rel i2c.rel mpu_simple.rel sleeping.rel rf_addr.rel rf_head.rel nRF24L.rel nrfdbg.rel nrfutils.rel crtxinit.rel
+TARGET    = edtracker
+CFLAGS    = --model-large -Imcu-lib -DNRF24LE1 -DDBG_MODE=0
+LFLAGS    = --code-loc 0x0000 --code-size 0x4000 --xram-loc 0x0000 --xram-size 0x400
+ASFLAGS   = -plosgff
+RELFILES  = edtracker.rel i2c.rel mpu_simple.rel sleeping.rel
+RELFILES += rf_addr.rel rf_head.rel nRF24L.rel nrfdbg.rel nrfutils.rel crtxinit.rel
 
 VPATH    = mcu-lib
 

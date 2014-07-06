@@ -10,22 +10,11 @@
 
 #include "nrfdbg.h"
 
-hid_kbd_report_t	usb_keyboard_report;
-uint8_t				usb_consumer_report;
+hid_joystick_report_t	usb_joystick_report;
 
-// contains the last received LED report
-uint8_t usb_led_report;		// bit	LED
-							// 0	CAPS
-							// 1	NUM
-							// 2	SCROLL
-
-void reset_keyboard_report(void)
+void reset_joystick_report(void)
 {
-	usb_keyboard_report.modifiers = 0;
-	usb_keyboard_report.keys[0] = KC_NO;
-	usb_keyboard_report.keys[1] = KC_NO;
-	usb_keyboard_report.keys[2] = KC_NO;
-	usb_keyboard_report.keys[3] = KC_NO;
-	usb_keyboard_report.keys[4] = KC_NO;
-	usb_keyboard_report.keys[5] = KC_NO;
+	usb_joystick_report.x = 0;
+	usb_joystick_report.y = 0;
+	usb_joystick_report.z = 0;
 }
