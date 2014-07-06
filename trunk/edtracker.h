@@ -6,4 +6,6 @@
 #define LED_YELLOW	P01
 #define LED_GREEN	P02
 
+#define MPU_IRQ		P06
+
 #endif	// EDTRACKER_H

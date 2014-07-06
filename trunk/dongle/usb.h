@@ -193,24 +193,18 @@ typedef struct
 	usb_if_desc_t	if1;
 	usb_hid_desc_t	hid1;
 	usb_ep_desc_t	ep1in;
-
-	usb_if_desc_t	if2;
-	usb_hid_desc_t	hid2;
-	usb_ep_desc_t	ep2in;
-} usb_conf_desc_keyboard_t;
+} usb_conf_desc_joystick_t;
 
 #define USB_STRING_DESC_COUNT			4
-#define USB_KBD_HID_REPORT_DESC_SIZE	0x3f
-#define USB_CONS_HID_REPORT_DESC_SIZE	0x2d
+#define USB_JOY_HID_REPORT_DESC_SIZE	31
 
-extern __code const usb_conf_desc_keyboard_t usb_conf_desc;
+extern __code const usb_conf_desc_joystick_t usb_conf_desc;
 extern __code const usb_dev_desc_t usb_dev_desc;
 extern __code const uint8_t  usb_string_desc_0[];
 extern __code const uint16_t usb_string_desc_1[];
 extern __code const uint16_t usb_string_desc_2[];
 extern __code const uint16_t usb_string_desc_3[];
-extern __code const uint8_t usb_keyboard_report_descriptor[USB_KBD_HID_REPORT_DESC_SIZE];
-extern __code const uint8_t usb_consumer_report_descriptor[USB_CONS_HID_REPORT_DESC_SIZE];
+extern __code const uint8_t usb_joystick_report_descriptor[USB_JOY_HID_REPORT_DESC_SIZE];
 
 void usbInit(void);
 void usbPoll(void);
@@ -225,5 +219,4 @@ __xdata extern uint8_t usbIdleRate;				// in 4 ms units
 
 // endpoint buffer sizes
 #define USB_EP0_SIZE	0x40
-#define USB_EP1_SIZE	0x08
-#define USB_EP2_SIZE	0x08
+#define USB_EP1_SIZE	0x06

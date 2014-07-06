@@ -63,6 +63,11 @@ int main(void)
 	uint8_t fifo_cnt = 0;
 	bool had_int = false;
 	mpu_packet_t pckt;
+	//int16_t lcnt = 0;
+	//int32_t asum[3];
+	//asum[0] = 0;
+	//asum[1] = 0;
+	//asum[2] = 0;
 
 	hw_init();
 
@@ -83,25 +88,45 @@ int main(void)
 		
 		if (had_int  ||  more)
 		{
-			LED_YELLOW = 1;
 			dmp_read_fifo(&pckt, &more);
 			
-			if (fifo_cnt++ == 10)
+			LED_YELLOW = 1;
+			if (rf_head_send_message(&pckt, sizeof(pckt)))
 			{
-				if (rf_head_send_message(&pckt, sizeof(pckt)))
-				{
-					LED_GREEN = 1;
-					LED_RED = 0;
-				} else {
-					LED_GREEN = 0;
-					LED_RED = 1;
-				}
-				
-				fifo_cnt = 0;
+				LED_GREEN = 1;
+				LED_RED = 0;
+			} else {
+				LED_GREEN = 0;
+				LED_RED = 1;
 			}
+				
+			//if (++lcnt == 200)
+			//{
+			//	asum[0] = pckt.accel[0];
+			//	asum[1] = pckt.accel[1];
+			//	asum[2] = pckt.accel[2] - 16384;
+			//	lcnt = 1;
+			//	puts("---");
+			//} else {
+			//	asum[0] += pckt.accel[0];
+			//	asum[1] += pckt.accel[1];
+			//	asum[2] += pckt.accel[2] - 16384;
+			//}
+			
+			/*if (dbgEmpty())
+				printf("%6i %6i %6i - %6li %6li %6li\n", 
+								pckt.gyro[0], pckt.gyro[1], pckt.gyro[2],
+								//pckt.accel[0], pckt.accel[1], pckt.accel[2]);
+								asum[0] / lcnt, asum[1] / lcnt, asum[2] / lcnt);
+								//pckt.quat[0], pckt.quat[1], pckt.quat[2], pckt.quat[3]);
+								*/
 
 			LED_YELLOW = 0;
-			
+		}
+	}
+}
+
+
 			/*
 			if (dbgEmpty())
 				printf("%04x %04x %04x - %04x %04x %04x - %04x %04x %04x %04x\n", 
@@ -148,6 +173,3 @@ int main(void)
 					printf("%04x %04x %04x\n", iX >> 16, iY >> 16, iZ >> 16);
 			}
 			*/
-		}
-	}
-}

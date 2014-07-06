@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "reg24lu1.h"
 #include "nrfutils.h"
@@ -44,7 +45,7 @@ void usbInit(void)
 	
 	// we only want to get interrupts for EP0 IN/OUT
 	// the other interrupts are not needed (but EP1 IN is still used)
-	in_ien = 0x07;		// enable IN interrupts on EP0 and EP1
+	in_ien = 0x03;		// enable IN interrupts on EP0 and EP1
 	in_irq = 0x1f;		// reset IN interrupt flags
 	out_ien = 0x01;		// enable OUT interrupts on EP0
 	out_irq = 0x1f;		// reset OUT interrupt flags
@@ -60,12 +61,12 @@ void usbInit(void)
 
 	bin1addr = USB_EP0_SIZE/2;
 	bin2addr = bin1addr + USB_EP1_SIZE/2;
-	bin3addr = bin2addr + USB_EP2_SIZE/2;
+	bin3addr = bin2addr + 0;
 	bin4addr = bin3addr + 0;
 	bin5addr = bin4addr + 0;
 
 	// enable endpoints
-	inbulkval = 0x07;	// enables IN endpoints on EP0, EP1 and EP2
+	inbulkval = 0x04;	// enables IN endpoints on EP0 and EP1
 	outbulkval = 0x01;	// enables OUT endpoints on EP0
 	inisoval = 0x00;	// ISO not used
 	outisoval = 0x00;	// ISO not used
@@ -150,11 +151,8 @@ void usbGetDescriptor(void)
 	} else if (descriptor == USB_DESC_HID_REPORT) {
 		if (usbReqHidGetDesc.interface == 0)
 		{
-			packetizer_data_ptr = usb_keyboard_report_descriptor;
-			packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, USB_KBD_HID_REPORT_DESC_SIZE);
-		} else {
-			packetizer_data_ptr = usb_consumer_report_descriptor;
-			packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, USB_CONS_HID_REPORT_DESC_SIZE);
+			packetizer_data_ptr = usb_joystick_report_descriptor;
+			packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, USB_JOY_HID_REPORT_DESC_SIZE);
 		}
 	}
 
@@ -287,17 +285,10 @@ void usbHidRequest(void)
 		// this requests the HID report we defined with the HID report descriptor.
 		// this is usually sent over EP1 IN, but can be sent over EP0 too.
 
-		in0buf[0] = usb_keyboard_report.modifiers;
-		in0buf[1] = 0;
-		in0buf[2] = usb_keyboard_report.keys[0];
-		in0buf[3] = usb_keyboard_report.keys[1];
-		in0buf[4] = usb_keyboard_report.keys[2];
-		in0buf[5] = usb_keyboard_report.keys[3];
-		in0buf[6] = usb_keyboard_report.keys[4];
-		in0buf[7] = usb_keyboard_report.keys[5];
-
+		memcpy(in0buf, &usb_joystick_report, USB_EP1_SIZE);
+		
 		// send the data on it's way
-		in0bc = 8;
+		in0bc = USB_EP1_SIZE;
 		
 	} else if (bRequest == USB_REQ_HID_GET_IDLE) {
 

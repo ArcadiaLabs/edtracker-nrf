@@ -31,7 +31,7 @@ void rf_head_init(void)
 	nRF_WriteReg(EN_RXADDR, vERX_P0);		// enable RX address (for ACK)
 	
 	nRF_WriteReg(SETUP_RETR, vARD_250us 	// auto retransmit delay - ARD
-							| 0x0f);		// auto retransmit count - ARC
+							| 0x00);		// auto retransmit count - ARC
 	nRF_WriteReg(FEATURE, vEN_DPL | vEN_ACK_PAY);	// enable dynamic payload length and ACK payload
 	nRF_WriteReg(DYNPD, vDPL_P0);					// enable dynamic payload length for pipe 0
 
