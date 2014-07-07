@@ -13,7 +13,7 @@ __code const usb_dev_desc_t usb_dev_desc =
 	0,				// bDeviceProtocol
 	USB_EP0_SIZE,	// bMaxPacketSize0
 	0x40aa,			// idVendor			- some unknown vendor id
-	0x9004,			// idProduct
+	0x9005,			// idProduct
 	0x0001,			// bcdDevice
 	1,				// iManufacturer
 	2,				// iProduct
@@ -31,8 +31,8 @@ const __code uint8_t usb_joystick_report_descriptor[USB_JOY_HID_REPORT_DESC_SIZE
     0x09, 0x30,                    //     USAGE (X)
     0x09, 0x31,                    //     USAGE (Y)
     0x09, 0x32,                    //     USAGE (Z)
-    0x15, 0x00,                    //     LOGICAL_MINIMUM (0)
-    0x27, 0xff, 0xff, 0x00, 0x00,  //     LOGICAL_MAXIMUM (65535)
+    0x16, 0x00, 0x80,              //     LOGICAL_MINIMUM (-32768)
+    0x26, 0xff, 0x7f,              //     LOGICAL_MAXIMUM (32767)
     0x75, 0x10,                    //     REPORT_SIZE (16)
     0x95, 0x03,                    //     REPORT_COUNT (3)
     0x81, 0x82,                    //     INPUT (Data,Var,Abs,Vol)
@@ -82,8 +82,8 @@ __code const usb_conf_desc_joystick_t usb_conf_desc =
 		USB_DESC_ENDPOINT,
 		0x81,				// bEndpointAddress
 		USB_EP_TYPE_INT,	// bmAttributes
-		USB_EP1_SIZE,		// wMaxPacketSize
-		10,					// bInterval		10ms
+		8,//USB_EP1_SIZE,		// wMaxPacketSize
+		10,					// bInterval  10ms
 	},
 };
 

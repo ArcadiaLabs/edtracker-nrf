@@ -196,7 +196,7 @@ typedef struct
 } usb_conf_desc_joystick_t;
 
 #define USB_STRING_DESC_COUNT			4
-#define USB_JOY_HID_REPORT_DESC_SIZE	31
+#define USB_JOY_HID_REPORT_DESC_SIZE	30
 
 extern __code const usb_conf_desc_joystick_t usb_conf_desc;
 extern __code const usb_dev_desc_t usb_dev_desc;
