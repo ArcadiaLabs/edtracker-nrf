@@ -60,7 +60,6 @@ void main()
 		// try to read the recv buffer
 		bytes_received = rf_dngl_recv(recv_buffer, RECV_BUFF_SIZE);
 
-		/*
 		if (bytes_received)
 		{
 			// make a text message from the received packet
@@ -111,17 +110,7 @@ void main()
 
 			joystick_report_ready = true;
 		}
-		*/
 
-		if (!joystick_report_ready)
-		{
-			usb_joystick_report.x += 50;
-			usb_joystick_report.y += 50;
-			usb_joystick_report.z += 50;
-			
-			joystick_report_ready = true;
-		}
-		
 		// send the report if the endpoint is not busy
 		if ((in1cs & 0x02) == 0   &&   (joystick_report_ready  ||  usbHasIdleElapsed()))
 		{
