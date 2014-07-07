@@ -97,13 +97,9 @@ void main()
 			newZ = constrain(newZ, -16383.0, 16383.0);
 
 			// and scale to out target range plus a 'sensitivity' factor;
-			//iX = newX * 2.0;
-			//iY = newY * 2.0;
-			//iZ = newZ * 2.0;
-
-			usb_joystick_report.x = newX;
-			usb_joystick_report.y = newY;
-			usb_joystick_report.z = newZ;
+			usb_joystick_report.x = newX * 8.0;
+			usb_joystick_report.y = newY * 8.0;
+			usb_joystick_report.z = newZ * 8.0;
 			
 			//if (dbgEmpty())
 			//	printf("%04x %04x %04x\n", usb_joystick_report.x, usb_joystick_report.y, usb_joystick_report.z);
