@@ -66,7 +66,7 @@ void usbInit(void)
 	bin5addr = bin4addr + 0;
 
 	// enable endpoints
-	inbulkval = 0x04;	// enables IN endpoints on EP0 and EP1
+	inbulkval = 0x03;	// enables IN endpoints on EP0 and EP1
 	outbulkval = 0x01;	// enables OUT endpoints on EP0
 	inisoval = 0x00;	// ISO not used
 	outisoval = 0x00;	// ISO not used
@@ -146,7 +146,10 @@ void usbGetDescriptor(void)
 			else
 				packetizer_data_ptr = (__code uint8_t*) usb_string_desc_3;
 
-			packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, packetizer_data_ptr[0]);
+			if (usbReqGetDesc.lengthMSB > 0)
+				packetizer_data_size = 0xff;
+			else
+				packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, packetizer_data_ptr[0]);
 		}
 	} else if (descriptor == USB_DESC_HID_REPORT) {
 		if (usbReqHidGetDesc.interface == 0)
@@ -238,8 +241,6 @@ void usbStdEndpointRequest(void)
 			uint8_t endpoint = usbRequest.wIndexLSB;
 			if (endpoint == 0x81)
 				in0buf[0] = in1cs & 0x01;
-			else if (endpoint == 0x82)
-				in0buf[0] = in2cs & 0x01;
 			else if (endpoint == 0x01)
 				in0buf[0] = out1cs & 0x01;
 
