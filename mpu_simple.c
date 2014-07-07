@@ -715,19 +715,11 @@ bool dmp_read_fifo(mpu_packet_t* pckt, uint8_t* more)
 
 	if (!mpu_read_fifo_stream(MAX_PACKET_LENGTH, fifo_data, more))
 		return true;
-	
-	pckt->quat[0] = * (uint16_t*) (fifo_data +  0);
-	pckt->quat[1] = * (uint16_t*) (fifo_data +  4);
-	pckt->quat[2] = * (uint16_t*) (fifo_data +  8);
-	pckt->quat[3] = * (uint16_t*) (fifo_data + 12);
-	
-	//for (i = 0; i < 4; i++)
-	//{
-	//	quat[i] = ((long)fifo_data[i * 4] << 24)
-	//				| ((long)fifo_data[i * 4 + 1] << 16)
-	//				| ((long)fifo_data[i * 4 + 2] << 8)
-	//				| fifo_data[i * 4 + 3];
-	//}
+
+	pckt->quat[0] = (fifo_data[ 0] << 8) | fifo_data[ 1];
+	pckt->quat[1] = (fifo_data[ 4] << 8) | fifo_data[ 5];
+	pckt->quat[2] = (fifo_data[ 8] << 8) | fifo_data[ 9];
+	pckt->quat[3] = (fifo_data[12] << 8) | fifo_data[13];
 	
 	/*
 # define QUAT_ERROR_THRESH			(1L<<24)
@@ -737,23 +729,26 @@ bool dmp_read_fifo(mpu_packet_t* pckt, uint8_t* more)
 
 	{			
 		int32_t quat_q14[4], quat_mag_sq;
-		quat_q14[0] = quat[0] >> 16;
-		quat_q14[1] = quat[1] >> 16;
-		quat_q14[2] = quat[2] >> 16;
-		quat_q14[3] = quat[3] >> 16;
+		quat_q14[0] = pckt->quat[0];
+		quat_q14[1] = pckt->quat[1];
+		quat_q14[2] = pckt->quat[2];
+		quat_q14[3] = pckt->quat[3];
+
 		quat_mag_sq = quat_q14[0] * quat_q14[0] + quat_q14[1] * quat_q14[1] +
 						quat_q14[2] * quat_q14[2] + quat_q14[3] * quat_q14[3];
 
-		if (quat_mag_sq < QUAT_MAG_SQ_MIN  ||  quat_mag_sq > QUAT_MAG_SQ_MAX)
+		if (quat_mag_sq < QUAT_MAG_SQ_MIN)
 		{
+			putchar('L');
+		} else if (quat_mag_sq > QUAT_MAG_SQ_MAX) {
 			// Quaternion is outside of the acceptable threshold.
-			//putchar('Q');
+			putchar('G');
 		} else {
-			putchar('H');
+			putchar(' ');
 		}
 	}
 	*/
-		
+	
 	ii += 16;
 	
 	for (i = 0; i < 3; i++)
