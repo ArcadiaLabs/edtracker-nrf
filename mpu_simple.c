@@ -375,8 +375,6 @@ bool dmp_load_firmware(void)
 		if (this_write > LOAD_CHUNK)
 			this_write = LOAD_CHUNK;
 
-	printf("%i\n", ii);
-			
 		if (!mpu_write_mem(ii, this_write, dmp_memory + ii))
 		{
 			puts("write failed");
@@ -729,10 +727,6 @@ void update_bias(void)
 
 	delay_ms(100);
 
-	LED_GREEN = 0;
-	LED_YELLOW = 0;
-	LED_RED = 0;
-	
 	for (s16cnt = 0; s16cnt < 500; s16cnt++)
 	{
 		//physical values in Q16.16 format
