@@ -10,9 +10,6 @@
 #include "nrfdbg.h"
 #include "sleeping.h"
 
-#define get_nrf_output_power()		vRF_PWR_0DBM
-
-
 // we want to count the lost packets
 // uint32_t plos_total, arc_total, rf_packets_total;
 
@@ -31,7 +28,7 @@ void rf_head_init(void)
 	nRF_WriteReg(EN_RXADDR, vERX_P0);		// enable RX address (for ACK)
 	
 	nRF_WriteReg(SETUP_RETR, vARD_250us 	// auto retransmit delay - ARD
-							| 0x00);		// auto retransmit count - ARC
+							| 0x02);		// auto retransmit count - ARC
 	nRF_WriteReg(FEATURE, vEN_DPL | vEN_ACK_PAY);	// enable dynamic payload length and ACK payload
 	nRF_WriteReg(DYNPD, vDPL_P0);					// enable dynamic payload length for pipe 0
 
@@ -55,7 +52,7 @@ bool rf_head_send_message(const void* buff, const uint8_t num_bytes)
 		;
 
 	nRF_WriteReg(RF_SETUP, vRF_DR_2MBPS			// data rate 
-							| get_nrf_output_power());	// output power
+							| vRF_PWR_0DBM);	// output power
 
 	nRF_FlushTX();
 	nRF_WriteReg(CONFIG, vEN_CRC | vCRCO | vPWR_UP);	// power up
@@ -63,7 +60,7 @@ bool rf_head_send_message(const void* buff, const uint8_t num_bytes)
 	nRF_WriteTxPayload(buff, num_bytes);
 
 	nRF_CE_hi();	// signal the transceiver to send the packet
-	sleep_rfirq();	// wait for the RF module to wake us up
+	sleep();		// wait for the RF module to wake us up
 	nRF_CE_lo();
 
 	status = nRF_NOP();					// read the status reg

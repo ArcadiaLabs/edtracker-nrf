@@ -6,7 +6,6 @@ bool dmp_init(void);
 
 bool dmp_read_fifo(mpu_packet_t* pckt, uint8_t* more);
 
-
 void update_bias(void);
 
 #endif	// MPU_H

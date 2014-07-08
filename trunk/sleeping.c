@@ -7,9 +7,10 @@
 #include "nrfdbg.h"
 
 #include "sleeping.h"
-//#include "matrix.h"
+#include "edtracker.h"
 #include "nrfutils.h"
 
+/*
 uint32_t watch_sec = 0;		// this is our watch
 
 uint32_t get_seconds32(void)
@@ -44,6 +45,7 @@ void set_compare_value(uint16_t value)
 	RTC2CMP1 = MSB(value);
 	RTC2CON = 5;				// enable compare
 }
+*/
 
 void init_sleep(void)
 {
@@ -57,10 +59,16 @@ void init_sleep(void)
 	while ((CLKLFCTRL & 0x80) != 0x80)
 		;
 		
-	IEN1 = 0x22;	// enable TICK and RFIRQ interrupts
-	EA = 1; 		// enable interrupts
+	//IEN0 = 0x01;		// enable IFP interrupt
+	//IEN1 = 0x02;		// enable RFIRQ interrupt
+	//INTEXP = 0x10;		// enable GPINT1 interrupt from P0.6
+	WUOPC0 = 0x40;		// enable wakeup on P0.6
+	WUCON = 0x88;
+	OPMCON = 0x04;
+	//EA = 1; 			// enable interrupts
 }
 
+/*
 uint16_t capture_rtc(void)
 {
 	RTC2CON |= _BV(4);	// capture the counter
@@ -70,11 +78,18 @@ uint16_t capture_rtc(void)
 // this interrupt wakes us up from sleep_regret()
 void ISR_TICK(void) __interrupt INTERRUPT_TICK
 {}
+*/
 
-// this ISR wakes us up if we get an ACK or the transceiver quits sending
-void ISR_RFIRQ(void) __interrupt INTERRUPT_RFIRQ
-{}
+//// this ISR wakes us up if we get an ACK or the transceiver quits sending
+//void ISR_RFIRQ(void) __interrupt INTERRUPT_RFIRQ
+//{}
+//
+//// this ISR wakes us up if we get an ACK or the transceiver quits sending
+//void ISR_IPF(void) __interrupt INTERRUPT_IPF
+//{
+//}
 
+/*
 void process_clock(void)
 {
 	static uint16_t prev_rtc2cpt = 0;
@@ -104,12 +119,17 @@ void sleep_standby(uint16_t ticks)
 
 	process_clock();
 }
+*/
 
-void sleep_rfirq(void)
+void sleep(void)
 {
-	PWRDWN = PWRDWN_STANDBY;
+	OPMCON = 0x06;
+	PWRDWN = PWRDWN_REG_RET;
+	OPMCON = 0x04;
 
-	process_clock();
+	//LED_YELLOW = 1;
+	//LED_YELLOW = 0;
+	//process_clock();
 }
 
 /*
