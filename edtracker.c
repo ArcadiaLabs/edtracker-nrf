@@ -63,40 +63,48 @@ int main(void)
 	uint8_t fifo_cnt = 0;
 	bool had_int = false;
 	mpu_packet_t pckt;
-	float f = HALF_PI;
 
 	hw_init();
 
+	/*while (1)
+	{
+		sleep();
+		LED_YELLOW = 1;
+		LED_YELLOW = 0;
+	}*/
+	
 	for (;;)
 	{
-		if (P06 == 0)
-		{
-			// wait for P06 to rise
-			while (P06 == 0)
-				;
-				
-			had_int = true;
-		} else {
-			had_int = false;
-		}
+		sleep();
+		
+		//if (P06 == 0)
+		//{
+		//	// wait for P06 to rise
+		//	while (P06 == 0)
+		//		;
+		//		
+		//	had_int = true;
+		//} else {
+		//	had_int = false;
+		//}
 		
 		dbgPoll();
 		
-		if (had_int  ||  more)
-		{
+		//if (had_int  ||  more)
+		do {
 			dmp_read_fifo(&pckt, &more);
 			
-			LED_YELLOW = 1;
+			//LED_YELLOW = 1;
 			if (rf_head_send_message(&pckt, sizeof(pckt)))
 			{
-				LED_GREEN = 1;
-				LED_RED = 0;
+				//LED_GREEN = 1;
+				//LED_RED = 0;
 			} else {
-				LED_GREEN = 0;
-				LED_RED = 1;
+				//LED_GREEN = 0;
+				//LED_RED = 1;
 			}
 				
-			LED_YELLOW = 0;
-		}
+			//LED_YELLOW = 0;
+		} while (more);
 	}
 }

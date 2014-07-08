@@ -78,6 +78,8 @@ uint8_t mpu_read_byte(uint8_t reg_addr, uint8_t* val)
 #define INV_FILTER_2100HZ_NOLPF		7
 #define NUM_FILTER					8
 
+#define FIFO_HZ		50
+
 bool mpu_init(void)
 {
 	mpu_write_byte(PWR_MGMT_1, 0x80);		// reset
@@ -86,7 +88,7 @@ bool mpu_init(void)
 	
 	mpu_write_byte(GYRO_CONFIG, 0x18);
 	mpu_write_byte(ACCEL_CONFIG, 0x00);
-	mpu_write_byte(SMPLRT_DIV, 19);			// 50hz
+	mpu_write_byte(SMPLRT_DIV, 1000 / FIFO_HZ - 1);
 	mpu_write_byte(CONFIG, INV_FILTER_20HZ);
 	//mpu_write_byte(CONFIG, 0x03);
 	//mpu_write_byte(INT_ENABLE, 0x00);
@@ -100,16 +102,16 @@ bool mpu_init(void)
 	delay_ms(50);
 	//mpu_write_byte(INT_ENABLE, 0x01);
 	//mpu_write_byte(INT_ENABLE, 0x00);
-	mpu_write_byte(FIFO_EN, 0x00);
+	mpu_write_byte(FIFO_EN, 0x00);		// disables all FIFO outputs
 	mpu_write_byte(USER_CTRL, 0x00);
-	mpu_write_byte(USER_CTRL, 0x04);
-	mpu_write_byte(USER_CTRL, 0x40);
+	mpu_write_byte(USER_CTRL, 0x04);	// reset FIFO
+	mpu_write_byte(USER_CTRL, 0x40);	// enable FIFO
 	delay_ms(50);
 	//mpu_write_byte(INT_ENABLE, 0x00);
 	mpu_write_byte(FIFO_EN, 0x78);
 	//mpu_write_byte(SMPLRT_DIV, 0x04);
 	//mpu_write_byte(CONFIG, INV_FILTER_20HZ);	// was 0x02
-	
+
 	return true;
 }
 
@@ -365,12 +367,16 @@ bool dmp_load_firmware(void)
 	
     uint8_t cur[LOAD_CHUNK], tmp[2];
 
+	puts("a");
+	
     for (ii = 0; ii < DMP_CODE_SIZE; ii += this_write)
 	{
         this_write = DMP_CODE_SIZE - ii;
 		if (this_write > LOAD_CHUNK)
 			this_write = LOAD_CHUNK;
 
+	printf("%i\n", ii);
+			
 		if (!mpu_write_mem(ii, this_write, dmp_memory + ii))
 		{
 			puts("write failed");
@@ -423,8 +429,8 @@ void reset_fifo(void)
 	mpu_write_byte(USER_CTRL, 0x04);
 	mpu_write_byte(USER_CTRL, 0x40);
 	delay_ms(50);
-	mpu_write_byte(INT_ENABLE, 0x01);
-	mpu_write_byte(FIFO_EN, 0x78);
+	mpu_write_byte(INT_ENABLE, 0x02);	// DMP fifo enable
+	mpu_write_byte(FIFO_EN, 0x78);		// enable gyro and accel FIFO
 }
 
 void mpu_set_gyro_bias_reg(int32_t* gyro_bias)
@@ -504,8 +510,8 @@ bool dmp_enable_feature(void)
 	const uint8_t __code arr[] = {0xA3,0xC0,0xC8,0xC2,0xC4,0xCC,0xC6,0xA3,0xA3,0xA3};
 	mpu_write_mem(CFG_15, sizeof arr, arr);
 	}
-	{	// DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT
-	const uint8_t __code arr[] = {0xD8};	// 0x20 to turn TAP on
+	{
+	const uint8_t __code arr[] = {0xD8};	// this influences the DMP fifo sample rate, just a guess...
 	mpu_write_mem(CFG_27, sizeof arr, arr);
 	}
 	{	// dmp_enable_gyro_cal
@@ -523,76 +529,15 @@ bool dmp_enable_feature(void)
 	mpu_write_mem(CFG_20, sizeof arr, arr);
 	}
 	
-	// enable and configure TAP
-	/*
-	{
-	const uint8_t __code arr[] = {0xF8};
-	mpu_write_mem(CFG_20, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x50,0x00};
-	mpu_write_mem(DMP_TAP_THX, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x3C,0x00};
-	mpu_write_mem(D_1_36, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x50,0x00};
-	mpu_write_mem(DMP_TAP_THY, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x3C,0x00};
-	mpu_write_mem(D_1_40, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x50,0x00};
-	mpu_write_mem(DMP_TAP_THZ, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x3C,0x00};
-	mpu_write_mem(D_1_44, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x3F};
-	mpu_write_mem(D_1_72, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x00};
-	mpu_write_mem(D_1_79, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x00,0x14};
-	mpu_write_mem(DMP_TAPW_MIN, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x00,0x64};
-	mpu_write_mem(D_1_218, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x00,0x8E,0xF9,0x90};
-	mpu_write_mem(D_1_92, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x00,0x08};
-	mpu_write_mem(D_1_90, sizeof arr, arr);
-	}
-	{
-	const uint8_t __code arr[] = {0x00,0x02};
-	mpu_write_mem(D_1_88, sizeof arr, arr);
-	}
-	*/
 	{
 	const uint8_t __code arr[] = {0xD8};
 	mpu_write_mem(CFG_ANDROID_ORIENT_INT, sizeof arr, arr);
 	}
 	{		// dmp_enable_lp_quat (disable)
-	const uint8_t __code arr[] = {0x8B,0x8B,0x8B,0x8B};		
+	const uint8_t __code arr[] = {0x8B,0x8B,0x8B,0x8B};
 	mpu_write_mem(CFG_LP_QUAT, sizeof arr, arr);
 	}
 
-	reset_fifo();
-	
 	{		// dmp_enable_6x_lp_quat (enable)
 	const uint8_t __code arr[] = {0x20,0x28,0x30,0x38};
 	mpu_write_mem(CFG_8, sizeof arr, arr);
@@ -602,7 +547,7 @@ bool dmp_enable_feature(void)
 
 	// this is dmp_set_fifo_rate()
 	{
-	const uint8_t __code arr[] = {0x00,0x03};		// 50hz DMP sample rate
+	const uint8_t __code arr[] = {0x00,0x00};
 	mpu_write_mem(D_0_22, sizeof arr, arr);
 	}
 	
@@ -661,56 +606,39 @@ bool dmp_init(void)
 	return true;
 }
 
-#define MAX_PACKET_LENGTH	32
-#define PACKET_LENGTH		28
+#define MAX_PACKET_LENGTH	28
+//#define PACKET_LENGTH		28
 #define MAX_FIFO			1024
 
-bool mpu_read_fifo_stream(uint16_t length, uint8_t* d, uint8_t* more)
+bool mpu_read_fifo_stream(uint16_t length, uint8_t* data, uint8_t* more)
 {
 	uint8_t tmp[2];
 	uint16_t fifo_count;
 
+	// read number of bytes in the FIFO
 	if (!i2c_read(FIFO_COUNT_H, 2, tmp))
 		return false;
 
 	fifo_count = (tmp[0] << 8) | tmp[1];
-
-	if (fifo_count < length)
+	
+	if (fifo_count == 0)
 	{
 		*more = 0;
 		return false;
 	}
 
-	if (fifo_count > (MAX_FIFO >> 1))
+	// bytes in the fifo must be a multiple of packet length
+	if (fifo_count % length)
 	{
-		// FIFO is 50% full, better check overflow bit
-		if (!i2c_read(INT_STATUS, 1, tmp))
-			return false;
-
-		if (tmp[0] & BIT_FIFO_OVERFLOW)
-		{
-			puts("FO");
-			
-			/*
-			mpu_write_byte(INT_ENABLE, 0x00);
-			mpu_write_byte(FIFO_EN, 0x00);		// disable fifo
-			mpu_write_byte(USER_CTRL, 0x00);
-			mpu_write_byte(USER_CTRL, 0x04);
-			mpu_write_byte(USER_CTRL, 0x40);
-			delay_ms(50);
-			mpu_write_byte(INT_ENABLE, 0x02);	// DMP interrupt
-			mpu_write_byte(FIFO_EN, 0x78);
-			*/
-			
-			return false;
-		}
+		reset_fifo();
+		return false;
 	}
 
-	if (!i2c_read(FIFO_R_W, length, d))
+	if (!i2c_read(FIFO_R_W, length, data))
 		return false;
 
-	*more = fifo_count / length - 1;
-
+	*more = (fifo_count != length);
+	
 	return true;
 }
 
@@ -720,7 +648,7 @@ bool dmp_read_fifo(mpu_packet_t* pckt, uint8_t* more)
     uint8_t ii = 0, i;
 
 	if (!mpu_read_fifo_stream(MAX_PACKET_LENGTH, fifo_data, more))
-		return true;
+		return false;
 
 	pckt->quat[0] = (fifo_data[ 0] << 8) | fifo_data[ 1];
 	pckt->quat[1] = (fifo_data[ 4] << 8) | fifo_data[ 5];
