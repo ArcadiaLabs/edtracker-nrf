@@ -498,98 +498,104 @@ bool dmp_enable_feature(void)
 {
 	{
 	const uint8_t __code arr[] = {0x02,0xCA,0xE3,0x09};
-	mpu_write_mem(104, sizeof arr, arr);
+	mpu_write_mem(D_0_104, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0xA3,0xC0,0xC8,0xC2,0xC4,0xCC,0xC6,0xA3,0xA3,0xA3};
-	mpu_write_mem(2727, sizeof arr, arr);
+	mpu_write_mem(CFG_15, sizeof arr, arr);
 	}
-	{
-	const uint8_t __code arr[] = {0xA3,0xC0,0xC8,0xC2,0xC4,0xCC,0xC6,0xA3,0xA3,0xA3};
-	mpu_write_mem(2727, sizeof arr, arr);
+	{	// DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT
+	const uint8_t __code arr[] = {0xD8};	// 0x20 to turn TAP on
+	mpu_write_mem(CFG_27, sizeof arr, arr);
 	}
-	{
-	const uint8_t __code arr[] = {0x20};
-	mpu_write_mem(2742, sizeof arr, arr);
-	}
-	{
+	{	// dmp_enable_gyro_cal
 	const uint8_t __code arr[] = {0xB8,0xAA,0xB3,0x8D,0xB4,0x98,0x0D,0x35,0x5D};
-	mpu_write_mem(1208, sizeof arr, arr);
+	mpu_write_mem(CFG_MOTION_BIAS, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0xB2,0x8B,0xB6,0x9B};
-	mpu_write_mem(2722, sizeof arr, arr);
+	mpu_write_mem(CFG_GYRO_RAW_DATA, sizeof arr, arr);
 	}
+
+	// disables TAP
+	{
+	const uint8_t __code arr[] = {0xD8};
+	mpu_write_mem(CFG_20, sizeof arr, arr);
+	}
+	
+	// enable and configure TAP
+	/*
 	{
 	const uint8_t __code arr[] = {0xF8};
-	mpu_write_mem(2224, sizeof arr, arr);
+	mpu_write_mem(CFG_20, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x50,0x00};
-	mpu_write_mem(468, sizeof arr, arr);
+	mpu_write_mem(DMP_TAP_THX, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x3C,0x00};
-	mpu_write_mem(292, sizeof arr, arr);
+	mpu_write_mem(D_1_36, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x50,0x00};
-	mpu_write_mem(472, sizeof arr, arr);
+	mpu_write_mem(DMP_TAP_THY, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x3C,0x00};
-	mpu_write_mem(296, sizeof arr, arr);
+	mpu_write_mem(D_1_40, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x50,0x00};
-	mpu_write_mem(476, sizeof arr, arr);
+	mpu_write_mem(DMP_TAP_THZ, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x3C,0x00};
-	mpu_write_mem(300, sizeof arr, arr);
+	mpu_write_mem(D_1_44, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x3F};
-	mpu_write_mem(328, sizeof arr, arr);
+	mpu_write_mem(D_1_72, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x00};
-	mpu_write_mem(335, sizeof arr, arr);
+	mpu_write_mem(D_1_79, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x00,0x14};
-	mpu_write_mem(478, sizeof arr, arr);
+	mpu_write_mem(DMP_TAPW_MIN, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x00,0x64};
-	mpu_write_mem(474, sizeof arr, arr);
+	mpu_write_mem(D_1_218, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x00,0x8E,0xF9,0x90};
-	mpu_write_mem(348, sizeof arr, arr);
+	mpu_write_mem(D_1_92, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x00,0x08};
-	mpu_write_mem(346, sizeof arr, arr);
+	mpu_write_mem(D_1_90, sizeof arr, arr);
 	}
 	{
 	const uint8_t __code arr[] = {0x00,0x02};
-	mpu_write_mem(344, sizeof arr, arr);
+	mpu_write_mem(D_1_88, sizeof arr, arr);
 	}
+	*/
 	{
 	const uint8_t __code arr[] = {0xD8};
-	mpu_write_mem(1853, sizeof arr, arr);
+	mpu_write_mem(CFG_ANDROID_ORIENT_INT, sizeof arr, arr);
 	}
-	{
-	const uint8_t __code arr[] = {0x8B,0x8B,0x8B,0x8B};
-	mpu_write_mem(2712, sizeof arr, arr);
+	{		// dmp_enable_lp_quat (disable)
+	const uint8_t __code arr[] = {0x8B,0x8B,0x8B,0x8B};		
+	mpu_write_mem(CFG_LP_QUAT, sizeof arr, arr);
 	}
 
 	reset_fifo();
 	
-	{
+	{		// dmp_enable_6x_lp_quat (enable)
 	const uint8_t __code arr[] = {0x20,0x28,0x30,0x38};
-	mpu_write_mem(2718, sizeof arr, arr);
+	mpu_write_mem(CFG_8, sizeof arr, arr);
 	}
 	
 	reset_fifo();
