@@ -22,6 +22,8 @@ void hw_init()
 							// P0.5 is the push button - input
 							// P0.6 is the MPU interrupt pin - input
 
+	P0CON = 0b01010101;		// turn on the pullup for the recenter button
+	
 	LED_RED		= 0;	// LEDs are off
 	LED_YELLOW	= 0;
 	LED_GREEN	= 0;
@@ -57,6 +59,8 @@ int main(void)
 	for (;;)
 	{
 		sleep_mpuirq();
+		
+		pckt.flags = (RECENTER_BTN == 0 ? FLAG_RECENTER : 0);
 		
 		do {
 			dmp_read_fifo(&pckt, &more);
