@@ -17,36 +17,24 @@
 
 void hw_init()
 {
-	P0DIR |= _BV(6);	// MPU interrupt input
-	
-	P0DIR &= 0x18;		// LEDs are outputs
+	P0DIR = 0b11110000;		// P0.0 P0.1 P0.2 are the LEDs and they are outputs
+							// P0.3 is the UART TX - output
+							// P0.5 is the push button - input
+							// P0.6 is the MPU interrupt pin - input
 
-	LED_RED		= 0;
+	LED_RED		= 0;	// LEDs are off
 	LED_YELLOW	= 0;
 	LED_GREEN	= 0;
 	
 	dbgInit();
 	i2c_init();
 
+	dputs("init started");
+	
 	LED_RED = 1;
 	
-	if (!mpu_init())
-	{
-		puts("mpu init FAILED!!!");
-		
+	if (!mpu_init()  ||  !dmp_init())
 		while (1);
-		
-	} else {
-		puts("mpu init ok");
-
-		if (!dmp_init())
-		{
-			puts("dmp_init FAILED!!!");
-			while (1);
-		} else {
-			puts("dmp_init ok");
-		}
-	}
 	
 	dbgFlush();
 	
@@ -55,56 +43,34 @@ void hw_init()
 	init_sleep();		// we need to wake up from RFIRQ
 
 	LED_RED = 0;
+
+	dputs("init OK");
 }
 
 int main(void)
 {
 	uint8_t more = 0;
-	uint8_t fifo_cnt = 0;
-	bool had_int = false;
 	mpu_packet_t pckt;
 
 	hw_init();
 
-	/*while (1)
-	{
-		sleep();
-		LED_YELLOW = 1;
-		LED_YELLOW = 0;
-	}*/
-	
 	for (;;)
 	{
-		sleep();
+		sleep_mpuirq();
 		
-		//if (P06 == 0)
-		//{
-		//	// wait for P06 to rise
-		//	while (P06 == 0)
-		//		;
-		//		
-		//	had_int = true;
-		//} else {
-		//	had_int = false;
-		//}
-		
-		dbgPoll();
-		
-		//if (had_int  ||  more)
 		do {
 			dmp_read_fifo(&pckt, &more);
 			
-			//LED_YELLOW = 1;
-			if (rf_head_send_message(&pckt, sizeof(pckt)))
-			{
-				//LED_GREEN = 1;
-				//LED_RED = 0;
-			} else {
-				//LED_GREEN = 0;
-				//LED_RED = 1;
-			}
-				
-			//LED_YELLOW = 0;
+			rf_head_send_message(&pckt, sizeof(pckt));
+			//if (rf_head_send_message(&pckt, sizeof(pckt)))
+			//{
+			//	LED_GREEN = 1;
+			//	LED_RED = 0;
+			//} else {
+			//	LED_GREEN = 0;
+			//	LED_RED = 1;
+			//}
+
 		} while (more);
 	}
 }

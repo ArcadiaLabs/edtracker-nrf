@@ -59,13 +59,11 @@ void init_sleep(void)
 	while ((CLKLFCTRL & 0x80) != 0x80)
 		;
 		
-	//IEN0 = 0x01;		// enable IFP interrupt
-	//IEN1 = 0x02;		// enable RFIRQ interrupt
-	//INTEXP = 0x10;		// enable GPINT1 interrupt from P0.6
+	IEN1 = 0x02;		// enable RFIRQ interrupt
 	WUOPC0 = 0x40;		// enable wakeup on P0.6
-	WUCON = 0x88;
-	OPMCON = 0x04;
-	//EA = 1; 			// enable interrupts
+	WUCON = 0x80;		// wakeup on RFIRQ and WUOPIRQ
+	OPMCON = 0x04;		// 
+	EA = 1; 			// enable interrupts
 }
 
 /*
@@ -80,11 +78,11 @@ void ISR_TICK(void) __interrupt INTERRUPT_TICK
 {}
 */
 
-//// this ISR wakes us up if we get an ACK or the transceiver quits sending
-//void ISR_RFIRQ(void) __interrupt INTERRUPT_RFIRQ
-//{}
-//
-//// this ISR wakes us up if we get an ACK or the transceiver quits sending
+// this ISR wakes us up if we get an ACK or the transceiver quits sending
+void ISR_RFIRQ(void) __interrupt INTERRUPT_RFIRQ
+{}
+
+// this ISR wakes us up if we get an ACK or the transceiver quits sending
 //void ISR_IPF(void) __interrupt INTERRUPT_IPF
 //{
 //}
@@ -121,15 +119,18 @@ void sleep_standby(uint16_t ticks)
 }
 */
 
-void sleep(void)
+void sleep_rfirq(void)
+{
+	//OPMCON = 0x06;
+	PWRDWN = PWRDWN_STANDBY;
+	//OPMCON = 0x04;
+}
+
+void sleep_mpuirq(void)
 {
 	OPMCON = 0x06;
 	PWRDWN = PWRDWN_REG_RET;
 	OPMCON = 0x04;
-
-	//LED_YELLOW = 1;
-	//LED_YELLOW = 0;
-	//process_clock();
 }
 
 /*

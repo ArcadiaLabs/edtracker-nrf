@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "nRF24L.h"
+#include "edtracker.h"
 #include "rf_protocol.h"
 #include "rf_head.h"
 #include "nrfutils.h"
@@ -60,7 +61,7 @@ bool rf_head_send_message(const void* buff, const uint8_t num_bytes)
 	nRF_WriteTxPayload(buff, num_bytes);
 
 	nRF_CE_hi();	// signal the transceiver to send the packet
-	sleep();		// wait for the RF module to wake us up
+	sleep_rfirq();	// wait for the RF module to wake us up
 	nRF_CE_lo();
 
 	status = nRF_NOP();					// read the status reg

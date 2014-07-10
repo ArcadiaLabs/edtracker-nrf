@@ -367,9 +367,7 @@ bool dmp_load_firmware(void)
 	
     uint8_t cur[LOAD_CHUNK], tmp[2];
 
-	puts("a");
-	
-    for (ii = 0; ii < DMP_CODE_SIZE; ii += this_write)
+	for (ii = 0; ii < DMP_CODE_SIZE; ii += this_write)
 	{
         this_write = DMP_CODE_SIZE - ii;
 		if (this_write > LOAD_CHUNK)
@@ -377,19 +375,19 @@ bool dmp_load_firmware(void)
 
 		if (!mpu_write_mem(ii, this_write, dmp_memory + ii))
 		{
-			puts("write failed");
+			dputs("write failed");
 			return false;
 		}
 
 		if (!mpu_read_mem(ii, this_write, cur))
 		{
-			puts("read failed");
+			dputs("read failed");
 			return false;
 		}
 
         if (memcmp(dmp_memory + ii, cur, this_write))
 		{
-			puts("verify failed");
+			dputs("verify failed");
             return false;
 		}
     }
@@ -399,7 +397,7 @@ bool dmp_load_firmware(void)
     tmp[1] = START_ADDR & 0xFF;
     if (!i2c_write(PRGM_START_H, 2, tmp))
 	{
-		puts("PRGM_START_H failed");
+		dputs("PRGM_START_H failed");
         return false;
 	}
 
@@ -570,19 +568,19 @@ bool dmp_init(void)
 {
 	if (!dmp_load_firmware())
 	{
-		puts("dmp_load_firmware FAILED!!!");
+		dputs("dmp_load_firmware FAILED!!!");
 		return false;
 	}
 
 	if (!dmp_set_orientation())
 	{
-		puts("dmp_set_orientation FAILED!!!");
+		dputs("dmp_set_orientation FAILED!!!");
 		return false;
 	}
 
 	if (!dmp_enable_feature())
 	{
-		puts("dmp_enable_feature FAILED!!!");
+		dputs("dmp_enable_feature FAILED!!!");
 		return false;
 	}
 	
@@ -709,7 +707,7 @@ void update_bias(void)
 	mpu_packet_t pckt;
 	int32_t gBias[3], aBias[3], fBias[3];
 
-	puts("update_bias()...");
+	dputs("update_bias()...");
 	
 	mpu_read_6050_accel_bias(fBias);
 	mpu_read_6050_accel_bias(aBias);
