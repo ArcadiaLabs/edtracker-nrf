@@ -2,7 +2,7 @@
 
 // this MUST be included in the source file which containing main()
 //void ISR_IPF(void) __interrupt INTERRUPT_IPF;
-//void ISR_RFIRQ(void) __interrupt INTERRUPT_RFIRQ;
+void ISR_RFIRQ(void) __interrupt INTERRUPT_RFIRQ;
 
 // inits CLKLF and sets up the interrupts
 void init_sleep(void);
@@ -16,7 +16,7 @@ void init_sleep(void);
 //void sleep_regret(uint16_t sleep_cnt);
 
 // we go into standby power down mode
-// RFIRQ or IPF wakes us up
-void sleep(void);
+void sleep_rfirq(void);		// goes to standby until the radio wakes us up
+void sleep_mpuirq(void);	// goes to register retention until the MPU IRQ wakes us up
 
 //void sleep_standby(uint16_t sleep_cnt);
