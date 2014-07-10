@@ -12,10 +12,12 @@ extern const __code uint8_t DongleAddr[NRF_ADDR_SIZE];
 // this message is sent to the USB dongle over the radio
 typedef struct
 {
+	uint8_t		flags;
 	int16_t		gyro[3];
 	int16_t		accel[3];
 	int16_t		quat[4];
 } mpu_packet_t;
 
+#define FLAG_RECENTER	0x01
 
 #endif		// RF_PROTOCOL_H

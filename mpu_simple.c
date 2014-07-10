@@ -689,8 +689,6 @@ bool dmp_read_fifo(mpu_packet_t* pckt, uint8_t* more)
 	for (i = 0; i < 3; i++)
 		pckt->gyro[i] = ((int16_t)fifo_data[ii+i*2] << 8) | fifo_data[ii+i*2+1];
 
-	ii += 6;
-
     return true;
 }
 
