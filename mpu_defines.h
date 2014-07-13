@@ -429,4 +429,57 @@
 #define DMP_BLPFNMZH    508
 #define DMP_BLPFNMZL    510
 
+
+#define BIT_I2C_MST_VDDIO   (0x80)
+#define BIT_FIFO_EN         (0x40)
+#define BIT_DMP_EN          (0x80)
+#define BIT_FIFO_RST        (0x04)
+#define BIT_DMP_RST         (0x08)
+#define BIT_FIFO_OVERFLOW   (0x10)
+#define BIT_DATA_RDY_EN     (0x01)
+#define BIT_DMP_INT_EN      (0x02)
+#define BIT_MOT_INT_EN      (0x40)
+#define BITS_FSR            (0x18)
+#define BITS_LPF            (0x07)
+#define BITS_HPF            (0x07)
+#define BITS_CLK            (0x07)
+#define BIT_FIFO_SIZE_1024  (0x40)
+#define BIT_FIFO_SIZE_2048  (0x80)
+#define BIT_FIFO_SIZE_4096  (0xC0)
+#define BIT_RESET           (0x80)
+#define BIT_SLEEP           (0x40)
+#define BIT_S0_DELAY_EN     (0x01)
+#define BIT_S2_DELAY_EN     (0x04)
+#define BITS_SLAVE_LENGTH   (0x0F)
+#define BIT_SLAVE_BYTE_SW   (0x40)
+#define BIT_SLAVE_GROUP     (0x10)
+#define BIT_SLAVE_EN        (0x80)
+#define BIT_I2C_READ        (0x80)
+#define BITS_I2C_MASTER_DLY (0x1F)
+#define BIT_AUX_IF_EN       (0x20)
+#define BIT_ACTL            (0x80)
+#define BIT_LATCH_EN        (0x20)
+#define BIT_ANY_RD_CLR      (0x10)
+#define BIT_BYPASS_EN       (0x02)
+#define BITS_WOM_EN         (0xC0)
+#define BIT_LPA_CYCLE       (0x20)
+#define BIT_STBY_XA         (0x20)
+#define BIT_STBY_YA         (0x10)
+#define BIT_STBY_ZA         (0x08)
+#define BIT_STBY_XG         (0x04)
+#define BIT_STBY_YG         (0x02)
+#define BIT_STBY_ZG         (0x01)
+#define BIT_STBY_XYZA       (BIT_STBY_XA | BIT_STBY_YA | BIT_STBY_ZA)
+#define BIT_STBY_XYZG       (BIT_STBY_XG | BIT_STBY_YG | BIT_STBY_ZG)
+
+#define INV_FILTER_256HZ_NOLPF2		0
+#define INV_FILTER_188HZ			1
+#define INV_FILTER_98HZ				2
+#define INV_FILTER_42HZ				3
+#define INV_FILTER_20HZ				4
+#define INV_FILTER_10HZ				5
+#define INV_FILTER_5HZ				6
+#define INV_FILTER_2100HZ_NOLPF		7
+#define NUM_FILTER					8
+
 #endif	// MPU_DEFINES_H

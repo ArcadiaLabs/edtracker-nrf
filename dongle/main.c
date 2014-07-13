@@ -43,16 +43,16 @@ int32_t constrain_i32(int32_t val, int32_t min, int32_t max)
 	return val;
 }
 
-#define xExpScale	16.0
-#define yExpScale	16.0
-#define zExpScale	16.0
+#define xExpScale	12.0
+#define yExpScale	12.0
+#define zExpScale	12.0
 
 #define xScale		8.0
 #define yScale		8.0
 #define zScale		8.0
 
-//#define SELF_CENTERING
-//#define EXP_SCALE_MODE
+#define SELF_CENTERING
+#define EXP_SCALE_MODE
 
 int16_t driftSamples = -2;
 float lastX = 0, dX = 0, dY, dZ;
@@ -65,7 +65,7 @@ bool calibrated = false;
 int16_t sampleCount = 0;
 float xDriftComp = 0.0;
 
-void loop(mpu_packet_t* pckt)
+bool process_packet(mpu_packet_t* pckt)
 {
 	float newZ, newY, newX;
 	float qw, qx, qy, qz;
@@ -77,23 +77,25 @@ void loop(mpu_packet_t* pckt)
 	qy = (float)(pckt->quat[2]) / 16384.0f;
 	qz = (float)(pckt->quat[3]) / 16384.0f;
 
+	// Calculate Yaw/Pitch/Roll
+
 	qww = qw * qw;
 	qxx = qx * qx;
 	qyy = qy * qy;
 	qzz = qz * qz;
 	
-	// Calculate Yaw/Pitch/Roll
-	// Update client with yaw/pitch/roll and tilt-compensated magnetometer data
-
-	// use some code to convert to R P Y
 	newZ =  atan2f(2.0 * (qy * qz + qw * qx), qww - qxx - qyy + qzz);
 	newY = -asinf(-2.0 * (qx * qz - qw * qy));
 	newX = -atan2f(2.0 * (qx * qy + qw * qz), qww + qxx - qyy - qzz);
 
+	//newZ =  atan2f(2.0 * (qy * qz + qw * qx), qw * qw - qx * qx - qy * qy + qz * qz);
+	//newY = -asinf(-2.0 * (qx * qz - qw * qy));                                    
+	//newX = -atan2f(2.0 * (qx * qy + qw * qz), qw * qw + qx * qx - qy * qy - qz * qz);
+
 	newX *= 10430.06;
 	newY *= 10430.06;
 	newZ *= 10430.06;
-	
+
 	if (!calibrated)
 	{
 		if (sampleCount < recalibrateSamples)
@@ -112,7 +114,8 @@ void loop(mpu_packet_t* pckt)
 			driftSamples = -2;
 			recalibrateSamples = 100;// reduce calibrate next time around
 		}
-		return;
+
+		return false;
 	}
 
 	// Have we been asked to recalibrate ?
@@ -121,10 +124,9 @@ void loop(mpu_packet_t* pckt)
 		sampleCount = 0;
 		cx = cy = cz = 0;
 		calibrated = false;
-		return;
-	}
 
-	// mpu_get_compass_reg(mag, &timestamp);
+		return false;
+	}
 
 	// apply calibration offsets
 	newX = newX - cx;
@@ -144,6 +146,8 @@ void loop(mpu_packet_t* pckt)
 	newY = constrain(newY, -16383.0, 16383.0);
 	newZ = constrain(newZ, -16383.0, 16383.0);
 
+	// printf_fast_f("%6.0f %6.0f %6.0f\n", newX, newY, newZ);
+	
 #ifdef EXP_SCALE_MODE
 	iX = (0.000122076 * newX * newX * xExpScale) * (newX / fabsf(newX)); //side mount = yaw
 	iY = (0.000122076 * newY * newY * yExpScale) * (newY / fabsf(newY)); //side mount = pitch
@@ -155,9 +159,9 @@ void loop(mpu_packet_t* pckt)
 #endif
 
 	// clamp after scaling to keep values within 16 bit range
-	iX = constrain_i32(iX, -32767, 32767);
-	iY = constrain_i32(iY, -32767, 32767);
-	iZ = constrain_i32(iZ, -32767, 32767);
+	iX = constrain_i32(iX, -32768, 32767);
+	iY = constrain_i32(iY, -32768, 32767);
+	iZ = constrain_i32(iZ, -32768, 32767);
 
 	// Do it to it.
 	usb_joystick_report.x = iX;
@@ -188,7 +192,6 @@ void loop(mpu_packet_t* pckt)
 		cx += dzX * 0.1;
 		ticksInZone = 0;
 		dzX = 0.0;
-		putchar('s');
 	}
 #endif
 
@@ -211,13 +214,15 @@ void loop(mpu_packet_t* pckt)
 		lastX = newX;
 	}
 
-	if (dbgEmpty())
-		printf_tiny("%d %d %d\n", usb_joystick_report.x, usb_joystick_report.y, usb_joystick_report.z);
+	//if (dbgEmpty())
+	//	printf_tiny("%d %d %d\n", usb_joystick_report.x, usb_joystick_report.y, usb_joystick_report.z);
 		
 	//if (dbgEmpty())
 	//	printf("%04x %04x %04x\n", usb_joystick_report.x, usb_joystick_report.y, usb_joystick_report.z);
 	//printf_fast_f("%d %f\n", driftSamples, dX / driftSamples);
 	//printf_fast_f("%f\n", dX / driftSamples);
+	
+	return true;
 }
 
 void main(void)
@@ -249,12 +254,8 @@ void main(void)
 		// try to read the recv buffer
 		bytes_received = rf_dngl_recv(recv_buffer, RECV_BUFF_SIZE);
 
-		if (bytes_received)
-		{
-			loop((mpu_packet_t*) recv_buffer);
-
-			joystick_report_ready = true;
-		}
+		if (bytes_received >= sizeof recv_buffer)
+			joystick_report_ready = process_packet((mpu_packet_t*) recv_buffer);
 
 		// send the report if the endpoint is not busy
 		if ((in1cs & 0x02) == 0   &&   (joystick_report_ready  ||  usbHasIdleElapsed()))
