@@ -51,7 +51,7 @@ void hw_init()
 
 int main(void)
 {
-	uint8_t more = 0;
+	uint8_t more = 0, int_cnt = 0;
 	mpu_packet_t pckt;
 
 	hw_init();
@@ -65,15 +65,20 @@ int main(void)
 		do {
 			dmp_read_fifo(&pckt, &more);
 			
-			rf_head_send_message(&pckt, sizeof(pckt));
-			//if (rf_head_send_message(&pckt, sizeof(pckt)))
-			//{
-			//	LED_GREEN = 1;
-			//	LED_RED = 0;
-			//} else {
-			//	LED_GREEN = 0;
-			//	LED_RED = 1;
-			//}
+			++int_cnt;
+			
+			if ((int_cnt & 3) == 0)		// only send every 4th packet
+			{
+				//LED_YELLOW = 1;
+				rf_head_send_message(&pckt, sizeof(pckt));
+				//if (rf_head_send_message(&pckt, sizeof(pckt)))
+				//{
+				//	LED_GREEN = 1;
+				//} else {
+				//	LED_GREEN = 0;
+				//}
+				//LED_YELLOW = 0;
+			}
 
 		} while (more);
 	}
