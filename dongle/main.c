@@ -3,7 +3,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
+
+#include "mymath.h"
 
 #include "reg24lu1.h"
 
@@ -19,26 +20,24 @@
 
 #include "nrfdbg.h"
 
-#define RECV_BUFF_SIZE	32
-
-float constrain(float val, float min, float max)
+float constrain_flt(float val)
 {
-	if (val < min)
-		return min;
+	if (val < -16383.0)
+		return -16384.0;
 		
-	if (val > max)
-		return max;
+	if (val > 16383.0)
+		return 16383.0;
 		
 	return val;
 }
 
-int32_t constrain_i32(int32_t val, int32_t min, int32_t max)
+int32_t constrain_16bit(int32_t val)
 {
-	if (val < min)
-		return min;
+	if (val < -32768)
+		return -32768;
 		
-	if (val > max)
-		return max;
+	if (val > 32767)
+		return 32767;
 		
 	return val;
 }
@@ -83,14 +82,14 @@ bool process_packet(mpu_packet_t* pckt)
 	qxx = qx * qx;
 	qyy = qy * qy;
 	qzz = qz * qz;
-	
-	newZ =  atan2f(2.0 * (qy * qz + qw * qx), qww - qxx - qyy + qzz);
-	newY = -asinf(-2.0 * (qx * qz - qw * qy));
-	newX = -atan2f(2.0 * (qx * qy + qw * qz), qww + qxx - qyy - qzz);
 
-	//newZ =  atan2f(2.0 * (qy * qz + qw * qx), qw * qw - qx * qx - qy * qy + qz * qz);
-	//newY = -asinf(-2.0 * (qx * qz - qw * qy));                                    
-	//newX = -atan2f(2.0 * (qx * qy + qw * qz), qw * qw + qx * qx - qy * qy - qz * qz);
+	newZ =  atan2(2.0 * (qy * qz + qw * qx), qww - qxx - qyy + qzz);
+	newY = -asin(-2.0 * (qx * qz - qw * qy));
+	newX = -atan2(2.0 * (qx * qy + qw * qz), qww + qxx - qyy - qzz);
+
+	//newZ =  atan2(2.0 * (qy * qz + qw * qx), qw * qw - qx * qx - qy * qy + qz * qz);
+	//newY = -asin(-2.0 * (qx * qz - qw * qy));                                    
+	//newX = -atan2(2.0 * (qx * qy + qw * qz), qw * qw + qx * qx - qy * qy - qz * qz);
 
 	newX *= 10430.06;
 	newY *= 10430.06;
@@ -142,16 +141,16 @@ bool process_packet(mpu_packet_t* pckt)
 	newZ = newZ - cz;
 
 	// clamp at 90 degrees left and right
-	newX = constrain(newX, -16383.0, 16383.0);
-	newY = constrain(newY, -16383.0, 16383.0);
-	newZ = constrain(newZ, -16383.0, 16383.0);
+	newX = constrain_flt(newX);
+	newY = constrain_flt(newY);
+	newZ = constrain_flt(newZ);
 
 	// printf_fast_f("%6.0f %6.0f %6.0f\n", newX, newY, newZ);
 	
 #ifdef EXP_SCALE_MODE
-	iX = (0.000122076 * newX * newX * xExpScale) * (newX / fabsf(newX)); //side mount = yaw
-	iY = (0.000122076 * newY * newY * yExpScale) * (newY / fabsf(newY)); //side mount = pitch
-	iZ = (0.000122076 * newZ * newZ * zExpScale) * (newZ / fabsf(newZ)); //side mount = roll
+	iX = (0.000122076 * newX * newX * xExpScale) * (newX / fabs(newX)); //side mount = yaw
+	iY = (0.000122076 * newY * newY * yExpScale) * (newY / fabs(newY)); //side mount = pitch
+	iZ = (0.000122076 * newZ * newZ * zExpScale) * (newZ / fabs(newZ)); //side mount = roll
 #else
 	iX = newX * xScale;
 	iY = newY * yScale;
@@ -159,9 +158,9 @@ bool process_packet(mpu_packet_t* pckt)
 #endif
 
 	// clamp after scaling to keep values within 16 bit range
-	iX = constrain_i32(iX, -32768, 32767);
-	iY = constrain_i32(iY, -32768, 32767);
-	iZ = constrain_i32(iZ, -32768, 32767);
+	iX = constrain_16bit(iX);
+	iY = constrain_16bit(iY);
+	iZ = constrain_16bit(iZ);
 
 	// Do it to it.
 	usb_joystick_report.x = iX;
@@ -173,7 +172,7 @@ bool process_packet(mpu_packet_t* pckt)
 	//  and not moving
 	//  and pitch is levelish then start to count
 #ifdef SELF_CENTERING
-	if (labs(iX) < 3000.0  &&  labs(iX - lX) < 5.0  &&  labs(iY) < 600)
+	if (labs(iX) < 3000  &&  labs(iX - lX) < 5  &&  labs(iY) < 600)
 	{
 		ticksInZone++;
 		dzX += iX;
@@ -229,9 +228,9 @@ void main(void)
 {
 	bool joystick_report_ready = false;
 
-	__xdata uint8_t recv_buffer[RECV_BUFF_SIZE];
-	__xdata uint8_t bytes_received;
-	
+	mpu_packet_t packet;
+	uint8_t bytes_received;
+
 	P0DIR = 0x00;	// all outputs
 	P0ALT = 0x00;	// all GPIO default behavior
 	
@@ -241,7 +240,7 @@ void main(void)
 	dbgInit();
 	
 	dputs("\nlu1 online");
-	
+
 	rf_dngl_init();
 
 	reset_joystick_report();
@@ -252,10 +251,10 @@ void main(void)
 		dbgPoll();	// send chars from the uart TX buffer
 		
 		// try to read the recv buffer
-		bytes_received = rf_dngl_recv(recv_buffer, RECV_BUFF_SIZE);
+		bytes_received = rf_dngl_recv(&packet, sizeof packet);
 
-		if (bytes_received >= sizeof recv_buffer)
-			joystick_report_ready = process_packet((mpu_packet_t*) recv_buffer);
+		if (bytes_received == sizeof packet)
+			joystick_report_ready = process_packet(&packet);
 
 		// send the report if the endpoint is not busy
 		if ((in1cs & 0x02) == 0   &&   (joystick_report_ready  ||  usbHasIdleElapsed()))
