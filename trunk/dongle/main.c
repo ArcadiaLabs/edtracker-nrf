@@ -63,6 +63,7 @@ float cx, cy, cz = 0.0;
 bool calibrated = false;
 int16_t sampleCount = 0;
 float xDriftComp = 0.0;
+uint8_t pckt_cnt = 0;
 
 bool process_packet(mpu_packet_t* pckt)
 {
@@ -194,17 +195,17 @@ bool process_packet(mpu_packet_t* pckt)
 	}
 #endif
 
-	// Apply X axis drift compensation
-	//if (nowMillis > lastUpdate)
+	// Apply X axis drift compensation every 5th packet
+	if (++pckt_cnt == 5)
 	{
-		cx = cx + xDriftComp;	//depending on your mounting
+		cx = cx + xDriftComp;	// depending on your mounting
 
 		if (cx > 65536.0)
 			cx -= 65536.0;
 		else if (cx < -65536.0)
 			cx += 65536.0;
 
-		//lastUpdate = nowMillis + 100;
+		pckt_cnt = 0;
 
 		driftSamples++;
 
@@ -227,9 +228,7 @@ bool process_packet(mpu_packet_t* pckt)
 void main(void)
 {
 	bool joystick_report_ready = false;
-
 	mpu_packet_t packet;
-	uint8_t bytes_received;
 
 	P0DIR = 0x00;	// all outputs
 	P0ALT = 0x00;	// all GPIO default behavior
@@ -250,10 +249,8 @@ void main(void)
 		usbPoll();	// handles USB interrupts
 		dbgPoll();	// send chars from the uart TX buffer
 		
-		// try to read the recv buffer
-		bytes_received = rf_dngl_recv(&packet, sizeof packet);
-
-		if (bytes_received == sizeof packet)
+		// try to read the recv buffer, then process the received data
+		if (rf_dngl_recv(&packet, sizeof packet) == sizeof packet)
 			joystick_report_ready = process_packet(&packet);
 
 		// send the report if the endpoint is not busy
