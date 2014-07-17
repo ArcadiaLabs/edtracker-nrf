@@ -31,6 +31,7 @@ LIBS:contrib
 LIBS:valves
 LIBS:edtracker_nrf
 LIBS:nrf24le1
+LIBS:edtracker_nrf-cache
 EELAYER 24 0
 EELAYER END
 $Descr A4 11693 8268
@@ -584,4 +585,8 @@ $EndComp
 Wire Wire Line
 	9650 4700 10050 4700
 Connection ~ 9650 4350
+Text Label 2550 2850 0    60   ~ 0
+PROG
+Text Label 2550 2950 0    60   ~ 0
+RESET
 $EndSCHEMATC
