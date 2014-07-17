@@ -1,16 +1,16 @@
-Cmp-Mod V01 Created by Cvpcb (2014-06-23 BZR 4954)-product   date = 26/06/2014 10:30:56
+Cmp-Mod V01 Created by Cvpcb (2014-07-15 BZR 5005)-product   date = 17/07/2014 12:48:35
 
 BeginCmp
-TimeStamp = /53A876AC;
+TimeStamp = /53C5091B;
 Reference = BT1;
-ValeurCmp = BATTERY_CR2032;
-IdModule  = edtracker_nrf:CR2032_THT;
+ValeurCmp = BAT_CR123;
+IdModule  = edtracker_nrf:CR123;
 EndCmp
 
 BeginCmp
 TimeStamp = /53A9ABA8;
 Reference = BT2;
-ValeurCmp = BATTERY;
+ValeurCmp = BAT_EXT;
 IdModule  = edtracker_nrf:BATTERY_EXT;
 EndCmp
 
@@ -32,21 +32,21 @@ BeginCmp
 TimeStamp = /53A99C66;
 Reference = D1;
 ValeurCmp = LED;
-IdModule  = LEDs:LED-3MM;
+IdModule  = LEDs:LED-0805;
 EndCmp
 
 BeginCmp
 TimeStamp = /53A99CDF;
 Reference = D2;
 ValeurCmp = LED;
-IdModule  = LEDs:LED-3MM;
+IdModule  = LEDs:LED-0805;
 EndCmp
 
 BeginCmp
 TimeStamp = /53A99CF8;
 Reference = D3;
 ValeurCmp = LED;
-IdModule  = LEDs:LED-3MM;
+IdModule  = LEDs:LED-0805;
 EndCmp
 
 BeginCmp
@@ -67,21 +67,21 @@ BeginCmp
 TimeStamp = /53A99DAC;
 Reference = R1;
 ValeurCmp = R;
-IdModule  = Resistors_SMD:Resistor_SMD0805_HandSoldering;
+IdModule  = Resistors_SMD:Resistor_SMD0805_ReflowWave;
 EndCmp
 
 BeginCmp
 TimeStamp = /53A99E23;
 Reference = R2;
 ValeurCmp = R;
-IdModule  = Resistors_SMD:Resistor_SMD0805_HandSoldering;
+IdModule  = Resistors_SMD:Resistor_SMD0805_ReflowWave;
 EndCmp
 
 BeginCmp
 TimeStamp = /53A99E55;
 Reference = R3;
 ValeurCmp = R;
-IdModule  = Resistors_SMD:Resistor_SMD0805_HandSoldering;
+IdModule  = Resistors_SMD:Resistor_SMD0805_ReflowWave;
 EndCmp
 
 BeginCmp
@@ -95,14 +95,14 @@ BeginCmp
 TimeStamp = /53AAC4C3;
 Reference = SW2;
 ValeurCmp = SWITCH_INV;
-IdModule  = Pin_Headers:Pin_Header_Angled_1x03;
+IdModule  = edtracker_nrf:ESP2010_switch;
 EndCmp
 
 BeginCmp
 TimeStamp = /53A87671;
 Reference = U1;
 ValeurCmp = NRF24LE1_PROG;
-IdModule  = edtracker_nrf:Pin_Header_Angled_2x04;
+IdModule  = edtracker_nrf:Pin_Header_Straight_2x04;
 EndCmp
 
 BeginCmp
