@@ -1,3 +1,4 @@
 (fp_lib_table
   (lib (name edtracker_nrf)(type KiCad)(uri ${KIPRJMOD}/edtracker_nrf.pretty)(options "")(descr edtracker))
+  (lib (name oshw_logo)(type Legacy)(uri ${KIPRJMOD}/OSHW-logo.mod)(options "")(descr ""))
 )
