@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by Cvpcb (2014-07-15 BZR 5005)-product   date = 7/17/2014 9:27:09 PM
+Cmp-Mod V01 Created by Cvpcb (2014-07-15 BZR 5005)-product   date = 18/07/2014 08:52:22
 
 BeginCmp
 TimeStamp = /53C5091B;
@@ -67,21 +67,21 @@ BeginCmp
 TimeStamp = /53A99DAC;
 Reference = R1;
 ValeurCmp = R;
-IdModule  = edtracker_nrf:Resistor_SMD0805_ReflowWave;
+IdModule  = edtracker_nrf:Resistor_SMD0805_HandSoldering;
 EndCmp
 
 BeginCmp
 TimeStamp = /53A99E23;
 Reference = R2;
 ValeurCmp = R;
-IdModule  = edtracker_nrf:Resistor_SMD0805_ReflowWave;
+IdModule  = edtracker_nrf:Resistor_SMD0805_HandSoldering;
 EndCmp
 
 BeginCmp
 TimeStamp = /53A99E55;
 Reference = R3;
 ValeurCmp = R;
-IdModule  = edtracker_nrf:Resistor_SMD0805_ReflowWave;
+IdModule  = edtracker_nrf:Resistor_SMD0805_HandSoldering;
 EndCmp
 
 BeginCmp
