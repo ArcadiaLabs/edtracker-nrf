@@ -50,8 +50,8 @@ int32_t constrain_16bit(int32_t val)
 #define yScale		8.0
 #define zScale		8.0
 
-#define SELF_CENTERING
-#define EXP_SCALE_MODE
+//#define SELF_CENTERING
+//#define EXP_SCALE_MODE
 
 int16_t driftSamples = -2;
 float lastX = 0, dX = 0, dY, dZ;

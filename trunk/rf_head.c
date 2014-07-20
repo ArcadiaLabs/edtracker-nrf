@@ -73,8 +73,6 @@ bool rf_head_send_message(const void* buff, const uint8_t num_bytes)
 	//nRF_ReadReg(OBSERVE_TX);
 	//arc_total += nRF_data[1] & 0x0f;
 	
-	//++rf_packets_total;
-	
 	nRF_WriteReg(CONFIG, vEN_CRC | vCRCO);		// nRF power down
 	
 	return is_sent;
