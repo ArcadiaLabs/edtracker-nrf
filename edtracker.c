@@ -13,6 +13,7 @@
 #include "mpu_regs.h"
 #include "sleeping.h"
 #include "rf_head.h"
+#include "settings.h"
 #include "edtracker.h"
 
 void hw_init()
@@ -49,37 +50,108 @@ void hw_init()
 	dputs("init OK");
 }
 
+/*
+void test_bias(void)
+{
+	int32_t g[3];
+	int32_t a[3];
+	int16_t cnt = 0;
+	uint8_t more;
+	mpu_packet_t pckt;
+	
+	while (1)
+	{
+		if (cnt == 0)
+		{
+			g[0] = 0;
+			g[1] = 0;
+			g[2] = 0;
+
+			a[0] = 0;
+			a[1] = 0;
+			a[2] = 0;
+		}
+		
+		// wait for the interrupt
+		while (MPU_IRQ)
+			dbgPoll();
+		while (!MPU_IRQ);
+
+		dmp_read_fifo(&pckt, &more);
+		
+		a[0] += pckt.accel[0];
+		a[1] += pckt.accel[1];
+		a[2] += pckt.accel[2];
+
+		g[0] += pckt.gyro[0];
+		g[1] += pckt.gyro[1];
+		g[2] += pckt.gyro[2];
+		
+		if (cnt == 500)
+		{
+			printf("%li   %li   %li\n", a[0] / cnt, a[1] / cnt, a[2] / cnt - 16384);
+			cnt = 0;
+		} else {
+			++cnt;
+		}
+	}
+}
+*/
+
+#define LED_PCKT_TOTAL		150
+#define LED_PCKT_LED_ON		2
+
 int main(void)
 {
-	uint8_t more = 0, int_cnt = 0;
+	uint8_t more, fifo_cnt = 0;
+	uint8_t rf_pckt_ok = 0, rf_pckt_lost = 0;
+	bool read_result;
 	mpu_packet_t pckt;
 
 	hw_init();
 
 	for (;;)
 	{
-		sleep_mpuirq();
-		
-		pckt.flags = (RECENTER_BTN == 0 ? FLAG_RECENTER : 0);
-		
+		// wait for the interrupt
+		while (MPU_IRQ);
+		while (!MPU_IRQ);
+			
 		do {
-			dmp_read_fifo(&pckt, &more);
+			// read all the packets in the MPU fifo
+			do {
+				read_result = dmp_read_fifo(&pckt, &more);
+			} while (more);
 			
-			++int_cnt;
-			
-			if ((int_cnt & 3) == 0)		// only send every 4th packet
+			if (read_result)
 			{
-				//LED_YELLOW = 1;
-				rf_head_send_message(&pckt, sizeof(pckt));
-				//if (rf_head_send_message(&pckt, sizeof(pckt)))
-				//{
-				//	LED_GREEN = 1;
-				//} else {
-				//	LED_GREEN = 0;
-				//}
-				//LED_YELLOW = 0;
-			}
+				++fifo_cnt;
+				
+				if ((fifo_cnt & 3) == 0)		// send every 4th packet
+				{
+					pckt.flags = (RECENTER_BTN == 0 ? FLAG_RECENTER : 0);
+					
+					if (rf_head_send_message(&pckt, sizeof(pckt)))
+						++rf_pckt_ok;
+					else
+						++rf_pckt_lost;
 
+					// update the LEDs
+					if (rf_pckt_lost + rf_pckt_ok == LED_PCKT_TOTAL)
+					{
+						if (rf_pckt_ok > rf_pckt_lost)
+							LED_GREEN = 1;
+						else
+							LED_RED = 1;
+							
+					} else if (rf_pckt_lost + rf_pckt_ok == LED_PCKT_TOTAL + LED_PCKT_LED_ON) {
+						LED_RED = 0;
+						LED_GREEN = 0;
+
+						rf_pckt_ok = rf_pckt_lost = 0;
+					}
+				}
+			}
+			
 		} while (more);
 	}
 }

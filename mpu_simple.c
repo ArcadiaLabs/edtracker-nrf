@@ -27,6 +27,7 @@ uint8_t mpu_read_byte(uint8_t reg_addr, uint8_t* val)
 	return result ? 0 : 0xff;
 }*/
 
+int16_t fBias[3];
 
 #define FIFO_HZ		200
 
@@ -169,11 +170,11 @@ void reset_fifo(void)
 	mpu_write_byte(FIFO_EN, 0x78);		// enable gyro and accel FIFO
 }
 
-void mpu_set_gyro_bias_reg(int32_t* gyro_bias)
+void mpu_set_gyro_bias_reg(int16_t* gyro_bias)
 {
 	uint8_t d[2], i;
 
-	for (i = 0; i < 3; i++) 
+	for (i = 0; i < 3; i++)
 	{
 		d[0] = (gyro_bias[i] >> 8) & 0xff;
 		d[1] = (gyro_bias[i]) & 0xff;
@@ -181,57 +182,42 @@ void mpu_set_gyro_bias_reg(int32_t* gyro_bias)
 	}
 }
 
-/**
- *  @brief      Read biases to the accel bias 6050 registers.
- *  This function reads from the MPU6050 accel offset cancellations registers.
- *  The format are G in +-8G format. The register is initialized with OTP 
- *  factory trim values.
- *  @param[in]  accel_bias  returned structure with the accel bias
- *  @return     0 if successful.
- */
-void mpu_read_6050_accel_bias(int32_t* accel_bias)
+void mpu_read_accel_bias(int16_t* accel_bias)
 {
 	uint8_t d[2], i;
 
 	for (i = 0; i < 3; i++)
 	{
 		i2c_read(0x06 + i * 2, 2, d);
-		accel_bias[i] = ((int32_t)d[0] << 8) | d[1];
+		accel_bias[i] = ((int16_t)d[0] << 8) | d[1];
 	}
 }
 
-/**
- *  @brief      Push biases to the accel bias 6050 registers.
- *  This function expects biases relative to the current sensor output, and
- *  these biases will be added to the factory-supplied values. Bias inputs are LSB
- *  in +-8G format.
- *  @param[in]  accel_bias  New biases.
- */
-void mpu_set_accel_bias_6050_reg(const int32_t* accel_bias, uint8_t relative)
+void mpu_set_accel_bias_reg(const int16_t* accel_bias, const uint8_t relative)
 {
 	uint8_t d[2];
-	int32_t accel_reg_bias[3];
-	int32_t mask = 0x0001;
+	int16_t accel_reg_bias[3];
 	uint8_t mask_bit[3] = {0, 0, 0};
 	uint8_t i;
 
-	mpu_read_6050_accel_bias(accel_reg_bias);
+	mpu_read_accel_bias(accel_reg_bias);
 
 	// bit 0 of the 2 byte bias is for temp comp
 	// calculations need to compensate for this and not change it
-	for (i = 0; i < 3; i++) 
+	for (i = 0; i < 3; i++)
 	{
-		if (accel_reg_bias[i] & mask)
+		if (accel_reg_bias[i] & 1)
 			mask_bit[i] = 0x01;
-
-		if (relative == 1)
+			
+		if (relative)
 			accel_reg_bias[i] -= accel_bias[i];
 		else	// just dump the value in
 			accel_reg_bias[i] = accel_bias[i];
 
 		d[0] = (accel_reg_bias[i] >> 8) & 0xff;
-		d[1] = (accel_reg_bias[i]) & 0xff;
+		d[1] = (accel_reg_bias[i]) & 0xfe;
 		d[1] = d[1] | mask_bit[i];
+
 		i2c_write(0x06 + i * 2, 2, d);
 	}
 }
@@ -295,13 +281,167 @@ bool dmp_enable_feature(void)
 	return true;
 }
 
-void loadBiases(void)
+#define PACKET_LENGTH	28
+
+bool mpu_read_fifo_stream(uint16_t length, uint8_t* data, uint8_t* more)
 {
-	int32_t gBias[3] = {-78, -102, 65};
-	int32_t aBias[3] = {65742, 132, -20};
+	uint8_t tmp[2];
+	uint16_t fifo_count;
+
+	// read number of bytes in the FIFO
+	if (!i2c_read(FIFO_COUNT_H, 2, tmp))
+		return false;
+
+	fifo_count = (tmp[0] << 8) | tmp[1];
+	
+	if (fifo_count == 0)
+	{
+		*more = 0;
+		return false;
+	}
+
+	// bytes in the fifo must be a multiple of packet length
+	if (fifo_count % length)
+		return false;
+
+	if (!i2c_read(FIFO_R_W, length, data))
+		return false;
+
+	*more = (fifo_count != length);
+	
+	return true;
+}
+
+bool dmp_read_fifo(mpu_packet_t* pckt, uint8_t* more)
+{
+    uint8_t fifo_data[PACKET_LENGTH];
+    uint8_t i;
+
+	if (!mpu_read_fifo_stream(PACKET_LENGTH, fifo_data, more))
+		return false;
+
+	for (i = 0; i < 4; i++)
+		pckt->quat[i] = (fifo_data[i * 4] << 8) | fifo_data[1 + i * 4];
+
+	for (i = 0; i < 3; i++)
+		pckt->accel[i] = (fifo_data[16 + i * 2] << 8) | fifo_data[17 + i * 2];
+
+	for (i = 0; i < 3; i++)
+		pckt->gyro[i] = (fifo_data[22 + i * 2] << 8) | fifo_data[23 + i * 2];
+
+    return true;
+}
+
+void msg(char* m, int16_t* v)
+{
+#ifdef DBG_MODE
+	dprintf("%s %i   %i   %i\n", m, v[0], v[1], v[2]);
+#else
+	m, v;
+#endif
+}
+
+void calibrate_bias(void)
+{
+	uint8_t more;
+	uint16_t s16cnt;
+	int8_t accel_step = 50;
+	mpu_packet_t pckt;
+	int16_t gBias[3], aBias[3];
+
+	dputs("calibrating");
+	
+	msg("factory accel ", fBias);
+	
+	gBias[0] = 0;
+	gBias[1] = 0;
+	gBias[2] = 0;
+	
+	aBias[0] = 0;
+	aBias[1] = 0;
+	aBias[2] = 0;
+
+	// set gyro to zero and accel to factory bias
+	mpu_set_gyro_bias_reg(gBias);
+
+	delay_ms(100);
+
+	for (s16cnt = 0; s16cnt < 200; s16cnt++)
+	{
+		while (MPU_IRQ == 1)
+			dbgPoll();
+		while (MPU_IRQ == 0)
+			;
+		
+		if (s16cnt == 50)
+			accel_step = 10;
+		else if (s16cnt == 100)
+			accel_step = 1;
+		
+		do {
+			dmp_read_fifo(&pckt, &more);
+		} while (more);
+
+		if (pckt.accel[0] >= 1)
+			aBias[0] += accel_step;
+		else if (pckt.accel[0] <= -1)
+			aBias[0] -= accel_step;
+
+		if (pckt.accel[1] >= 1)
+			aBias[1] += accel_step;
+		else if (pckt.accel[1] <= -1)
+			aBias[1] -= accel_step;
+
+		if (pckt.accel[2] > 16384)
+			aBias[2] += accel_step;
+		else if (pckt.accel[2] < 16384)
+			aBias[2] -= accel_step;
+
+		if (pckt.gyro[0] > 1)
+			gBias[0]--;
+		else if (pckt.gyro[0] < -1)
+			gBias[0]++;
+
+		if (pckt.gyro[1] > 1)
+			gBias[1]--;
+		else if (pckt.gyro[1] < -1)
+			gBias[1]++;
+
+		if (pckt.gyro[2] > 1)
+			gBias[2]--;
+		else if (pckt.gyro[2] < -1)
+			gBias[2]++;
+
+		//if (dbgEmpty())
+		//{
+		//	msg("g ", gBias);
+		//	msg("a ", aBias);
+		//}
+
+		// push the factory bias back
+		mpu_set_accel_bias_reg(fBias, 0);
+		mpu_set_gyro_bias_reg(gBias);
+		mpu_set_accel_bias_reg(aBias, 1);
+	}
+
+	msg("g ", gBias);
+	msg("a ", aBias);
+
+	dbgFlush();
+}
+
+void load_biases(void)
+{
+	int16_t gBias[3] = { 16, -125,  69};
+	int16_t aBias[3] = {118, -125, -35};
+
+	// load the factory bias in case we need it for bias calibration
+	mpu_read_accel_bias(fBias);
 	
 	mpu_set_gyro_bias_reg(gBias);
-	mpu_set_accel_bias_6050_reg(aBias, true);
+	mpu_set_accel_bias_reg(aBias, 1);
+
+	//calibrate_bias();
 }
 
 bool dmp_init(void)
@@ -324,9 +464,6 @@ bool dmp_init(void)
 		return false;
 	}
 	
-	loadBiases();
-
-	// enable DMP
 	mpu_write_byte(INT_ENABLE, 0x00);
 	//mpu_write_byte(SMPLRT_DIV, 0x04);
 	mpu_write_byte(FIFO_EN, 0x00);
@@ -338,191 +475,8 @@ bool dmp_init(void)
 	delay_ms(50);
 	mpu_write_byte(USER_CTRL, 0xC0);
 	mpu_write_byte(INT_ENABLE, 0x02);
+
+	load_biases();
 	
 	return true;
-}
-
-#define MAX_PACKET_LENGTH	28
-//#define PACKET_LENGTH		28
-#define MAX_FIFO			1024
-
-bool mpu_read_fifo_stream(uint16_t length, uint8_t* data, uint8_t* more)
-{
-	uint8_t tmp[2];
-	uint16_t fifo_count;
-
-	// read number of bytes in the FIFO
-	if (!i2c_read(FIFO_COUNT_H, 2, tmp))
-		return false;
-
-	fifo_count = (tmp[0] << 8) | tmp[1];
-	
-	if (fifo_count == 0)
-	{
-		*more = 0;
-		return false;
-	}
-
-	// bytes in the fifo must be a multiple of packet length
-	if (fifo_count % length)
-	{
-		reset_fifo();
-		return false;
-	}
-
-	if (!i2c_read(FIFO_R_W, length, data))
-		return false;
-
-	*more = (fifo_count != length);
-	
-	return true;
-}
-
-bool dmp_read_fifo(mpu_packet_t* pckt, uint8_t* more)
-{
-    uint8_t fifo_data[MAX_PACKET_LENGTH];
-    uint8_t ii = 0, i;
-
-	if (!mpu_read_fifo_stream(MAX_PACKET_LENGTH, fifo_data, more))
-		return false;
-
-	pckt->quat[0] = (fifo_data[ 0] << 8) | fifo_data[ 1];
-	pckt->quat[1] = (fifo_data[ 4] << 8) | fifo_data[ 5];
-	pckt->quat[2] = (fifo_data[ 8] << 8) | fifo_data[ 9];
-	pckt->quat[3] = (fifo_data[12] << 8) | fifo_data[13];
-	
-	/*
-# define QUAT_ERROR_THRESH			(1L<<24)
-# define QUAT_MAG_SQ_NORMALIZED		(1L<<28)
-# define QUAT_MAG_SQ_MIN			(QUAT_MAG_SQ_NORMALIZED - QUAT_ERROR_THRESH)
-# define QUAT_MAG_SQ_MAX			(QUAT_MAG_SQ_NORMALIZED + QUAT_ERROR_THRESH)
-
-	{			
-		int32_t quat_q14[4], quat_mag_sq;
-		quat_q14[0] = pckt->quat[0];
-		quat_q14[1] = pckt->quat[1];
-		quat_q14[2] = pckt->quat[2];
-		quat_q14[3] = pckt->quat[3];
-
-		quat_mag_sq = quat_q14[0] * quat_q14[0] + quat_q14[1] * quat_q14[1] +
-						quat_q14[2] * quat_q14[2] + quat_q14[3] * quat_q14[3];
-
-		if (quat_mag_sq < QUAT_MAG_SQ_MIN)
-		{
-			putchar('L');
-		} else if (quat_mag_sq > QUAT_MAG_SQ_MAX) {
-			// Quaternion is outside of the acceptable threshold.
-			putchar('G');
-		} else {
-			putchar(' ');
-		}
-	}
-	*/
-	
-	ii += 16;
-	
-	for (i = 0; i < 3; i++)
-		pckt->accel[i] = ((int16_t)fifo_data[ii+i*2] << 8) | fifo_data[ii+i*2+1];
-
-	ii += 6;
-
-	for (i = 0; i < 3; i++)
-		pckt->gyro[i] = ((int16_t)fifo_data[ii+i*2] << 8) | fifo_data[ii+i*2+1];
-
-    return true;
-}
-
-void msg(char* m, int32_t* v)
-{
-	m, v;
-	//printf("%s %li   %li   %li\n", m, v[0], v[1], v[2]);
-}
-
-void update_bias(void)
-{
-	uint8_t more;
-	uint16_t s16cnt;
-	mpu_packet_t pckt;
-	int32_t gBias[3], aBias[3], fBias[3];
-
-	dputs("update_bias()...");
-	
-	mpu_read_6050_accel_bias(fBias);
-	mpu_read_6050_accel_bias(aBias);
-	
-	aBias[0] = 65750;
-	
-	msg("faccel ", fBias);
-	
-	gBias[0] = 0;
-	gBias[1] = 0;
-	gBias[2] = 0;
-
-	// set gyro to zero and accel to factory bias
-	mpu_set_gyro_bias_reg(gBias);
-
-	delay_ms(100);
-
-	for (s16cnt = 0; s16cnt < 500; s16cnt++)
-	{
-		//physical values in Q16.16 format
-		//mpu_get_biases(gBias, aBias);
-
-		while (MPU_IRQ == 1)
-			dbgPoll();
-		while (MPU_IRQ == 0)
-			;
-		
-		do {
-			dmp_read_fifo(&pckt, &more);
-		} while (more);
-
-		if (pckt.accel[0] >= 1)
-			aBias[0] += 1;
-		else if (pckt.accel[0] <= -1)
-			aBias[0] -= 1;
-
-		if (pckt.accel[1] >= 1)
-			aBias[1]++;
-		else if (pckt.accel[1] <= -1)
-			aBias[1]--;
-
-		if (pckt.accel[2] > 16384)
-			aBias[2]++;
-		else if (pckt.accel[2] < 16384)
-			aBias[2]--;
-
-		if (pckt.gyro[0] > 1)
-			gBias[0]--;
-		else if (pckt.gyro[0] < -1)
-			gBias[0]++;
-
-		if (pckt.gyro[1] > 1)
-			gBias[1]--;
-		else if (pckt.gyro[1] < -1)
-			gBias[1]++;
-
-		if (pckt.gyro[2] > 1)
-			gBias[2]--;
-		else if (pckt.gyro[2] < -1)
-			gBias[2]++;
-
-		//msg("gyro ", gBias);
-		//msg("accel ", aBias);
-
-		// push the factory bias back
-		mpu_set_accel_bias_6050_reg(fBias, 0);
-		mpu_set_gyro_bias_reg(gBias);
-		mpu_set_accel_bias_6050_reg(aBias, 1);
-		
-		// delay_ms(10);
-	}
-
-	msg("gyro ", gBias);
-	msg("accel ", aBias);
-
-	dbgFlush();
-	
-	//saveBias();
-	//loadBiases();
 }

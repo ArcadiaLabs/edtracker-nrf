@@ -49,20 +49,7 @@ void set_compare_value(uint16_t value)
 
 void init_sleep(void)
 {
-	CLKCTRL = 0x00;	// start both RCOSC16M and XOSC16M
-	CLKLFCTRL = 1;	// set CLKLF source to RCOSC32K
-	RTC2CON = 1;	// set rtc2Enable
-
-	// wait for one cycle
-	while ((CLKLFCTRL & 0x80) == 0x80)
-		;
-	while ((CLKLFCTRL & 0x80) != 0x80)
-		;
-		
 	IEN1 = 0x02;		// enable RFIRQ interrupt
-	WUOPC0 = 0x40;		// enable wakeup on P0.6
-	WUCON = 0x80;		// wakeup on RFIRQ and WUOPIRQ
-	OPMCON = 0x04;		// 
 	EA = 1; 			// enable interrupts
 }
 
@@ -121,16 +108,7 @@ void sleep_standby(uint16_t ticks)
 
 void sleep_rfirq(void)
 {
-	//OPMCON = 0x06;
 	PWRDWN = PWRDWN_STANDBY;
-	//OPMCON = 0x04;
-}
-
-void sleep_mpuirq(void)
-{
-	OPMCON = 0x06;
-	PWRDWN = PWRDWN_REG_RET;
-	OPMCON = 0x04;
 }
 
 /*
