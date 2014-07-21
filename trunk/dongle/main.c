@@ -42,16 +42,17 @@ int32_t constrain_16bit(int32_t val)
 	return val;
 }
 
-#define xExpScale	12.0
-#define yExpScale	12.0
-#define zExpScale	12.0
+#define xExpScale	10.0
+#define yExpScale	10.0
+#define zExpScale	10.0
 
 #define xScale		8.0
 #define yScale		8.0
 #define zScale		8.0
 
-//#define SELF_CENTERING
-//#define EXP_SCALE_MODE
+#define SELF_CENTERING
+#define EXP_SCALE_MODE
+#define CALC_DRIFT_COMP
 
 int16_t driftSamples = -2;
 float lastX = 0, dX = 0, dY, dZ;
@@ -62,8 +63,11 @@ uint8_t recalibrateSamples = 200;
 float cx, cy, cz = 0.0;
 bool calibrated = false;
 int16_t sampleCount = 0;
-float xDriftComp = 0.0;
 uint8_t pckt_cnt = 0;
+
+#ifdef CALC_DRIFT_COMP
+float xDriftComp = 0.0;
+#endif
 
 bool process_packet(mpu_packet_t* pckt)
 {
@@ -112,7 +116,7 @@ bool process_packet(mpu_packet_t* pckt)
 
 			dX = dY = dZ = 0.0;
 			driftSamples = -2;
-			recalibrateSamples = 100;// reduce calibrate next time around
+			recalibrateSamples = 100;	// reduce calibrate next time around
 		}
 
 		return false;
@@ -193,7 +197,7 @@ bool process_packet(mpu_packet_t* pckt)
 		ticksInZone = 0;
 		dzX = 0.0;
 	}
-#endif
+#endif	// SELF_CENTERING
 
 	// Apply X axis drift compensation every 5th packet
 	if (++pckt_cnt == 5)
