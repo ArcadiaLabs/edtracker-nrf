@@ -29,43 +29,6 @@ uint8_t mpu_read_byte(uint8_t reg_addr, uint8_t* val)
 
 int16_t fBias[3];
 
-#define FIFO_HZ		200
-
-bool mpu_init(void)
-{
-	mpu_write_byte(PWR_MGMT_1, 0x80);		// reset
-	delay_ms(100);
-	mpu_write_byte(PWR_MGMT_1, 0);			// wakeup
-	
-	mpu_write_byte(GYRO_CONFIG, 0x18);
-	mpu_write_byte(ACCEL_CONFIG, 0x00);
-	mpu_write_byte(SMPLRT_DIV, 1000 / FIFO_HZ - 1);
-	mpu_write_byte(CONFIG, INV_FILTER_98HZ);
-	//mpu_write_byte(CONFIG, 0x03);
-	//mpu_write_byte(INT_ENABLE, 0x00);
-	mpu_write_byte(USER_CTRL, 0x20);
-	mpu_write_byte(INT_PIN_CFG, 0x80);
-	mpu_write_byte(PWR_MGMT_1, 0x40);
-	mpu_write_byte(PWR_MGMT_2, 0x3F);
-	delay_ms(50);
-	mpu_write_byte(PWR_MGMT_1, 0x01);
-	mpu_write_byte(PWR_MGMT_2, 0x00);
-	delay_ms(50);
-	//mpu_write_byte(INT_ENABLE, 0x01);
-	//mpu_write_byte(INT_ENABLE, 0x00);
-	mpu_write_byte(FIFO_EN, 0x00);		// disables all FIFO outputs
-	mpu_write_byte(USER_CTRL, 0x00);
-	mpu_write_byte(USER_CTRL, 0x04);	// reset FIFO
-	mpu_write_byte(USER_CTRL, 0x40);	// enable FIFO
-	delay_ms(50);
-	//mpu_write_byte(INT_ENABLE, 0x00);
-	mpu_write_byte(FIFO_EN, 0x78);
-	//mpu_write_byte(SMPLRT_DIV, 0x04);
-	//mpu_write_byte(CONFIG, INV_FILTER_20HZ);	// was 0x02
-
-	return true;
-}
-
 bool mpu_write_mem(uint16_t mem_addr, uint16_t length, const uint8_t* data2write)
 {
     uint8_t tmp[2];
@@ -166,7 +129,7 @@ void reset_fifo(void)
 	mpu_write_byte(USER_CTRL, 0x04);
 	mpu_write_byte(USER_CTRL, 0x40);
 	delay_ms(50);
-	mpu_write_byte(INT_ENABLE, 0x02);	// DMP fifo enable
+	mpu_write_byte(INT_ENABLE, 0x01);	// fifo enable
 	mpu_write_byte(FIFO_EN, 0x78);		// enable gyro and accel FIFO
 }
 
@@ -189,7 +152,7 @@ void mpu_read_accel_bias(int16_t* accel_bias)
 	for (i = 0; i < 3; i++)
 	{
 		i2c_read(0x06 + i * 2, 2, d);
-		accel_bias[i] = ((int16_t)d[0] << 8) | d[1];
+		accel_bias[i] = (d[0] << 8) | d[1];
 	}
 }
 
@@ -197,7 +160,7 @@ void mpu_set_accel_bias_reg(const int16_t* accel_bias, const uint8_t relative)
 {
 	uint8_t d[2];
 	int16_t accel_reg_bias[3];
-	uint8_t mask_bit[3] = {0, 0, 0};
+	uint8_t mask_bit;
 	uint8_t i;
 
 	mpu_read_accel_bias(accel_reg_bias);
@@ -207,7 +170,9 @@ void mpu_set_accel_bias_reg(const int16_t* accel_bias, const uint8_t relative)
 	for (i = 0; i < 3; i++)
 	{
 		if (accel_reg_bias[i] & 1)
-			mask_bit[i] = 0x01;
+			mask_bit = 0x01;
+		else
+			mask_bit = 0x00;
 			
 		if (relative)
 			accel_reg_bias[i] -= accel_bias[i];
@@ -216,72 +181,140 @@ void mpu_set_accel_bias_reg(const int16_t* accel_bias, const uint8_t relative)
 
 		d[0] = (accel_reg_bias[i] >> 8) & 0xff;
 		d[1] = (accel_reg_bias[i]) & 0xfe;
-		d[1] = d[1] | mask_bit[i];
+		d[1] = d[1] | mask_bit;
 
 		i2c_write(0x06 + i * 2, 2, d);
 	}
 }
 
-bool dmp_enable_feature(void)
+void dmp_enable_feature(bool send_cal_gyro)
 {
 	{
-	const uint8_t __code arr[] = {0x02,0xCA,0xE3,0x09};
+	const uint8_t __code arr[] = {0x02,0xca,0xe3,0x09};
 	mpu_write_mem(D_0_104, sizeof arr, arr);
 	}
 	{
-	const uint8_t __code arr[] = {0xA3,0xC0,0xC8,0xC2,0xC4,0xCC,0xC6,0xA3,0xA3,0xA3};
+	const uint8_t __code arr[] = {0xa3,0xc0,0xc8,0xc2,0xc4,0xcc,0xc6,0xa3,0xa3,0xa3};
 	mpu_write_mem(CFG_15, sizeof arr, arr);
 	}
 	{
-	const uint8_t __code arr[] = {0xD8};	// this influences the DMP fifo sample rate, just a guess...
+	const uint8_t __code arr[] = {0x20};		// setting this to D8 disables tap, but also messes up the fifo rates
 	mpu_write_mem(CFG_27, sizeof arr, arr);
 	}
-	{	// dmp_enable_gyro_cal
-	const uint8_t __code arr[] = {0xB8,0xAA,0xB3,0x8D,0xB4,0x98,0x0D,0x35,0x5D};
-	mpu_write_mem(CFG_MOTION_BIAS, sizeof arr, arr);
-	}
+	
+	if (send_cal_gyro)
 	{
-	const uint8_t __code arr[] = {0xB2,0x8B,0xB6,0x9B};
-	mpu_write_mem(CFG_GYRO_RAW_DATA, sizeof arr, arr);
-	}
+		{
+		const uint8_t __code arr[] = {0xB8,0xAA,0xB3,0x8D,0xB4,0x98,0x0D,0x35,0x5D};	// dmp_enable_gyro_cal(1)
+		mpu_write_mem(CFG_MOTION_BIAS, sizeof arr, arr);
+		}
 
-	// disables TAP
+		{
+		const uint8_t __code arr[] = {0xB2,0x8B,0xB6,0x9B};		// DMP_FEATURE_SEND_CAL_GYRO
+		mpu_write_mem(CFG_MOTION_BIAS, sizeof arr, arr);
+		}
+	} else {
+		{
+		const uint8_t __code arr[] = {0xb8,0xaa,0xaa,0xaa,0xb0,0x88,0xc3,0xc5,0xc7};	// dmp_enable_gyro_cal(0)
+		mpu_write_mem(CFG_MOTION_BIAS, sizeof arr, arr);
+		}
+
+		{
+		const uint8_t __code arr[] = {0xB0,0x80,0xB4,0x90};		// DMP_FEATURE_SEND_RAW_GYRO
+		mpu_write_mem(CFG_GYRO_RAW_DATA, sizeof arr, arr);
+		}
+	}
+	
 	{
-	const uint8_t __code arr[] = {0xD8};
+	const uint8_t __code arr[] = {0xf8};
 	mpu_write_mem(CFG_20, sizeof arr, arr);
 	}
 	
+	// this configures tap which we don't need, but can't disable it
+	// because disabling tap messes up fifo rates
+	/*{
+	const uint8_t __code arr[] = {0x50,0x00};
+	mpu_write_mem(DMP_TAP_THX, sizeof arr, arr);
+	}
 	{
-	const uint8_t __code arr[] = {0xD8};
+	const uint8_t __code arr[] = {0x3c,0x00};
+	mpu_write_mem(D_1_36, sizeof arr, arr);
+	}
+	{
+	const uint8_t __code arr[] = {0x50,0x00};
+	mpu_write_mem(DMP_TAP_THY, sizeof arr, arr);
+	}
+	{
+	const uint8_t __code arr[] = {0x3c,0x00};
+	mpu_write_mem(D_1_40, sizeof arr, arr);
+	}
+	{
+	const uint8_t __code arr[] = {0x50,0x00};
+	mpu_write_mem(DMP_TAP_THZ, sizeof arr, arr);
+	}
+	{
+	const uint8_t __code arr[] = {0x3c,0x00};
+	mpu_write_mem(D_1_44, sizeof arr, arr);
+	}
+	{
+	const uint8_t __code arr[] = {0x3f};
+	mpu_write_mem(D_1_72, sizeof arr, arr);
+	}
+	{
+	const uint8_t __code arr[] = {0x00};
+	mpu_write_mem(D_1_79, sizeof arr, arr);
+	}
+	{
+	const uint8_t __code arr[] = {0x00,0x14};
+	mpu_write_mem(DMP_TAPW_MIN, sizeof arr, arr);
+	}
+	{
+	const uint8_t __code arr[] = {0x00,0x64};
+	mpu_write_mem(D_1_218, sizeof arr, arr);
+	}
+	{
+	const uint8_t __code arr[] = {0x00,0x8e,0xf9,0x90};
+	mpu_write_mem(D_1_92, sizeof arr, arr);
+	}
+	{
+	const uint8_t __code arr[] = {0x00,0x08};
+	mpu_write_mem(D_1_90, sizeof arr, arr);
+	}
+	{
+	const uint8_t __code arr[] = {0x00,0x02};
+	mpu_write_mem(D_1_88, sizeof arr, arr);
+	}
+	*/
+	
+	{
+	const uint8_t __code arr[] = {0xd8};
 	mpu_write_mem(CFG_ANDROID_ORIENT_INT, sizeof arr, arr);
 	}
-	{		// dmp_enable_lp_quat (disable)
-	const uint8_t __code arr[] = {0x8B,0x8B,0x8B,0x8B};
+	{
+	const uint8_t __code arr[] = {0x8b,0x8b,0x8b,0x8b};
 	mpu_write_mem(CFG_LP_QUAT, sizeof arr, arr);
 	}
-
-	{		// dmp_enable_6x_lp_quat (enable)
+	{
 	const uint8_t __code arr[] = {0x20,0x28,0x30,0x38};
 	mpu_write_mem(CFG_8, sizeof arr, arr);
 	}
-	
-	reset_fifo();
 
+	reset_fifo();
+	
 	// this is dmp_set_fifo_rate()
 	{
-	const uint8_t __code arr[] = {0x00,0x00};
+	const uint8_t __code arr[] = {0x00,0x03};
 	mpu_write_mem(D_0_22, sizeof arr, arr);
 	}
-	
 	{
-	const uint8_t __code arr[] = {0xFE,0xF2,0xAB,0xC4,0xAA,0xF1,0xDF,0xDF,0xBB,0xAF,0xDF,0xDF};
+	const uint8_t __code arr[] = {0xfe,0xf2,0xab,0xc4,0xaa,0xf1,0xdf,0xdf,0xbb,0xaf,0xdf,0xdf};
 	mpu_write_mem(CFG_6, sizeof arr, arr);
 	}
 
-	return true;
+	reset_fifo();
 }
 
-#define PACKET_LENGTH	28
+#define PACKET_LENGTH	32
 
 bool mpu_read_fifo_stream(uint16_t length, uint8_t* data, uint8_t* more)
 {
@@ -332,6 +365,87 @@ bool dmp_read_fifo(mpu_packet_t* pckt, uint8_t* more)
     return true;
 }
 
+void load_biases(void)
+{
+	int16_t gBias[3] = { -8,  -71,  65};
+	int16_t aBias[3] = {257,   96, -39};
+
+	// load the factory bias in case we need it for bias calibration
+	mpu_read_accel_bias(fBias);
+	
+	mpu_set_gyro_bias_reg(gBias);
+	mpu_set_accel_bias_reg(aBias, 1);
+}
+
+void dmp_init(bool send_cal_gyro)
+{
+	if (!dmp_load_firmware())
+	{
+		dputs("dmp_load_firmware FAILED!!!");
+		return;
+	}
+
+	if (!dmp_set_orientation())
+	{
+		dputs("dmp_set_orientation FAILED!!!");
+		return;
+	}
+
+	dmp_enable_feature(send_cal_gyro);
+	
+	mpu_write_byte(INT_ENABLE, 0x00);
+	//mpu_write_byte(SMPLRT_DIV, 0x04);
+	mpu_write_byte(FIFO_EN, 0x00);
+	mpu_write_byte(INT_ENABLE, 0x02);
+	mpu_write_byte(INT_ENABLE, 0x00);
+	mpu_write_byte(FIFO_EN, 0x00);
+	mpu_write_byte(USER_CTRL, 0x00);
+	mpu_write_byte(USER_CTRL, 0x0C);
+	delay_ms(50);
+	mpu_write_byte(USER_CTRL, 0xC0);
+	mpu_write_byte(INT_ENABLE, 0x02);
+
+	load_biases();
+}
+
+#define FIFO_HZ		200
+
+void mpu_init(bool send_cal_gyro)
+{
+	mpu_write_byte(PWR_MGMT_1, 0x80);		// reset
+	delay_ms(100);
+	mpu_write_byte(PWR_MGMT_1, 0);			// wakeup
+	
+	mpu_write_byte(GYRO_CONFIG, 0x18);
+	mpu_write_byte(ACCEL_CONFIG, 0x00);
+	mpu_write_byte(SMPLRT_DIV, 1000 / FIFO_HZ - 1);
+	mpu_write_byte(CONFIG, INV_FILTER_98HZ);
+	//mpu_write_byte(CONFIG, 0x03);
+	//mpu_write_byte(INT_ENABLE, 0x00);
+	mpu_write_byte(USER_CTRL, 0x20);
+	mpu_write_byte(INT_PIN_CFG, 0x80);
+	mpu_write_byte(PWR_MGMT_1, 0x40);
+	mpu_write_byte(PWR_MGMT_2, 0x3F);
+	delay_ms(50);
+	mpu_write_byte(PWR_MGMT_1, 0x01);
+	mpu_write_byte(PWR_MGMT_2, 0x00);
+	delay_ms(50);
+	//mpu_write_byte(INT_ENABLE, 0x01);
+	//mpu_write_byte(INT_ENABLE, 0x00);
+	mpu_write_byte(FIFO_EN, 0x00);		// disables all FIFO outputs
+	mpu_write_byte(USER_CTRL, 0x00);
+	mpu_write_byte(USER_CTRL, 0x04);	// reset FIFO
+	mpu_write_byte(USER_CTRL, 0x40);	// enable FIFO
+	delay_ms(50);
+	//mpu_write_byte(INT_ENABLE, 0x00);
+	mpu_write_byte(FIFO_EN, 0x78);
+	//mpu_write_byte(SMPLRT_DIV, 0x04);
+	//mpu_write_byte(CONFIG, INV_FILTER_20HZ);	// was 0x02
+	
+	dmp_init(send_cal_gyro);
+}
+
+
 void msg(char* m, int16_t* v)
 {
 #ifdef DBG_MODE
@@ -349,6 +463,8 @@ void calibrate_bias(void)
 	mpu_packet_t pckt;
 	int16_t gBias[3], aBias[3];
 
+	mpu_init(false);
+	
 	dputs("calibrating");
 	
 	msg("factory accel ", fBias);
@@ -428,55 +544,4 @@ void calibrate_bias(void)
 	msg("a ", aBias);
 
 	dbgFlush();
-}
-
-void load_biases(void)
-{
-	int16_t gBias[3] = { 16, -125,  69};
-	int16_t aBias[3] = {118, -125, -35};
-
-	// load the factory bias in case we need it for bias calibration
-	mpu_read_accel_bias(fBias);
-	
-	mpu_set_gyro_bias_reg(gBias);
-	mpu_set_accel_bias_reg(aBias, 1);
-
-	//calibrate_bias();
-}
-
-bool dmp_init(void)
-{
-	if (!dmp_load_firmware())
-	{
-		dputs("dmp_load_firmware FAILED!!!");
-		return false;
-	}
-
-	if (!dmp_set_orientation())
-	{
-		dputs("dmp_set_orientation FAILED!!!");
-		return false;
-	}
-
-	if (!dmp_enable_feature())
-	{
-		dputs("dmp_enable_feature FAILED!!!");
-		return false;
-	}
-	
-	mpu_write_byte(INT_ENABLE, 0x00);
-	//mpu_write_byte(SMPLRT_DIV, 0x04);
-	mpu_write_byte(FIFO_EN, 0x00);
-	mpu_write_byte(INT_ENABLE, 0x02);
-	mpu_write_byte(INT_ENABLE, 0x00);
-	mpu_write_byte(FIFO_EN, 0x00);
-	mpu_write_byte(USER_CTRL, 0x00);
-	mpu_write_byte(USER_CTRL, 0x0C);
-	delay_ms(50);
-	mpu_write_byte(USER_CTRL, 0xC0);
-	mpu_write_byte(INT_ENABLE, 0x02);
-
-	load_biases();
-	
-	return true;
 }

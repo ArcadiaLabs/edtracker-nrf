@@ -197,6 +197,12 @@ typedef struct
 
 #define USB_STRING_DESC_COUNT			4
 #define USB_JOY_HID_REPORT_DESC_SIZE	30
+#define USB_CTRL_HID_REPORT_DESC_SIZE	33
+
+#define CTRL_REP_FIRST_ID		1
+#define CTRL_REP_FIRST_BYTES	16
+#define CTRL_REP_SECOND_ID		2
+#define CTRL_REP_SECOND_BYTES	64
 
 extern __code const usb_conf_desc_joystick_t usb_conf_desc;
 extern __code const usb_dev_desc_t usb_dev_desc;

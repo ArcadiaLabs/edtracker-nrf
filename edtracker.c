@@ -34,10 +34,9 @@ void hw_init()
 
 	dputs("init started");
 	
-	LED_RED = 1;
+	LED_YELLOW = 1;
 	
-	if (!mpu_init()  ||  !dmp_init())
-		while (1);
+	mpu_init(false);
 	
 	dbgFlush();
 	
@@ -45,12 +44,11 @@ void hw_init()
 	
 	init_sleep();		// we need to wake up from RFIRQ
 
-	LED_RED = 0;
+	LED_YELLOW = 0;
 
 	dputs("init OK");
 }
 
-/*
 void test_bias(void)
 {
 	int32_t g[3];
@@ -87,7 +85,7 @@ void test_bias(void)
 		g[1] += pckt.gyro[1];
 		g[2] += pckt.gyro[2];
 		
-		if (cnt == 500)
+		if (cnt == 200)
 		{
 			printf("%li   %li   %li\n", a[0] / cnt, a[1] / cnt, a[2] / cnt - 16384);
 			cnt = 0;
@@ -96,20 +94,19 @@ void test_bias(void)
 		}
 	}
 }
-*/
 
 #define LED_PCKT_TOTAL		150
 #define LED_PCKT_LED_ON		2
 
 int main(void)
 {
-	uint8_t more, fifo_cnt = 0;
+	uint8_t more;
 	uint8_t rf_pckt_ok = 0, rf_pckt_lost = 0;
 	bool read_result;
 	mpu_packet_t pckt;
 
 	hw_init();
-
+	
 	for (;;)
 	{
 		// wait for the interrupt
@@ -124,31 +121,26 @@ int main(void)
 			
 			if (read_result)
 			{
-				++fifo_cnt;
+				pckt.flags = (RECENTER_BTN == 0 ? FLAG_RECENTER : 0);
 				
-				if ((fifo_cnt & 3) == 0)		// send every 4th packet
+				if (rf_head_send_message(&pckt, sizeof(pckt)))
+					++rf_pckt_ok;
+				else
+					++rf_pckt_lost;
+
+				// update the LEDs
+				if (rf_pckt_lost + rf_pckt_ok == LED_PCKT_TOTAL)
 				{
-					pckt.flags = (RECENTER_BTN == 0 ? FLAG_RECENTER : 0);
-					
-					if (rf_head_send_message(&pckt, sizeof(pckt)))
-						++rf_pckt_ok;
+					if (rf_pckt_ok > rf_pckt_lost)
+						LED_GREEN = 1;
 					else
-						++rf_pckt_lost;
+						LED_RED = 1;
+						
+				} else if (rf_pckt_lost + rf_pckt_ok == LED_PCKT_TOTAL + LED_PCKT_LED_ON) {
+					LED_RED = 0;
+					LED_GREEN = 0;
 
-					// update the LEDs
-					if (rf_pckt_lost + rf_pckt_ok == LED_PCKT_TOTAL)
-					{
-						if (rf_pckt_ok > rf_pckt_lost)
-							LED_GREEN = 1;
-						else
-							LED_RED = 1;
-							
-					} else if (rf_pckt_lost + rf_pckt_ok == LED_PCKT_TOTAL + LED_PCKT_LED_ON) {
-						LED_RED = 0;
-						LED_GREEN = 0;
-
-						rf_pckt_ok = rf_pckt_lost = 0;
-					}
+					rf_pckt_ok = rf_pckt_lost = 0;
 				}
 			}
 			

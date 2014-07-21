@@ -21,25 +21,6 @@ __code const usb_dev_desc_t usb_dev_desc =
 	1,				// bNumConfigurations
 };
 
-const __code uint8_t usb_joystick_report_descriptor[USB_JOY_HID_REPORT_DESC_SIZE] =
-{
-    0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
-    0x09, 0x04,                    // USAGE (Joystick)
-    0xa1, 0x01,                    // COLLECTION (Application)
-    0x09, 0x01,                    //   USAGE (Pointer)
-    0xa1, 0x00,                    //   COLLECTION (Physical)
-    0x09, 0x30,                    //     USAGE (X)
-    0x09, 0x31,                    //     USAGE (Y)
-    0x09, 0x32,                    //     USAGE (Z)
-    0x16, 0x00, 0x80,              //     LOGICAL_MINIMUM (-32768)
-    0x26, 0xff, 0x7f,              //     LOGICAL_MAXIMUM (32767)
-    0x75, 0x10,                    //     REPORT_SIZE (16)
-    0x95, 0x03,                    //     REPORT_COUNT (3)
-    0x81, 0x82,                    //     INPUT (Data,Var,Abs,Vol)
-    0xc0,                          //   END_COLLECTION
-    0xc0                           // END_COLLECTION
-};
-
 __code const usb_conf_desc_joystick_t usb_conf_desc = 
 {
 	// configuration descriptor
@@ -82,10 +63,86 @@ __code const usb_conf_desc_joystick_t usb_conf_desc =
 		USB_DESC_ENDPOINT,
 		0x81,				// bEndpointAddress
 		USB_EP_TYPE_INT,	// bmAttributes
-		8,//USB_EP1_SIZE,		// wMaxPacketSize
+		8,					// wMaxPacketSize
 		10,					// bInterval  10ms
 	},
+	
+	/*
+	// control interface descriptor
+	{
+		sizeof(usb_if_desc_t),
+		USB_DESC_INTERFACE,
+		0,		// bInterfaceNumber
+		0,		// bAlternateSetting
+		1,		// bNumEndpoints
+		3,		// bInterfaceClass		- HID
+		0,		// bInterfaceSubClass
+		0,		// bInterfaceProtocol
+		0,		// iInterface
+	},
+	// HID descriptor
+	{
+		sizeof(usb_hid_desc_t),
+		USB_DESC_HID,
+		0x0111,					// bcdHID
+		0,						// bCountryCode
+		1,						// bNumDescriptors
+		USB_DESC_HID_REPORT,	// bDescriptorType_HID
+		sizeof(usb_joystick_report_descriptor),	// wDescriptorLength
+	},
+	// endpoint descriptor EP1IN
+	{
+		sizeof(usb_ep_desc_t),
+		USB_DESC_ENDPOINT,
+		0x81,				// bEndpointAddress
+		USB_EP_TYPE_INT,	// bmAttributes
+		8,					// wMaxPacketSize
+		10,					// bInterval  10ms
+	},	
+	*/
 };
+
+const __code uint8_t usb_joystick_report_descriptor[USB_JOY_HID_REPORT_DESC_SIZE] =
+{
+	0x05, 0x01,			// USAGE_PAGE (Generic Desktop)
+	0x09, 0x04,			// USAGE (Joystick)
+	0xa1, 0x01,			// COLLECTION (Application)
+	0x09, 0x01,			//   USAGE (Pointer)
+	0xa1, 0x00,			//   COLLECTION (Physical)
+	0x09, 0x30,			//     USAGE (X)
+	0x09, 0x31,			//     USAGE (Y)
+	0x09, 0x32,			//     USAGE (Z)
+	0x16, 0x00, 0x80,	//     LOGICAL_MINIMUM (-32768)
+	0x26, 0xff, 0x7f,	//     LOGICAL_MAXIMUM (32767)
+	0x75, 0x10,			//     REPORT_SIZE (16)
+	0x95, 0x03,			//     REPORT_COUNT (3)
+	0x81, 0x82,			//     INPUT (Data,Var,Abs,Vol)
+	0xc0,				//   END_COLLECTION
+	0xc0				// END_COLLECTION
+};
+
+const __code uint8_t usb_control_report_descriptor[USB_CTRL_HID_REPORT_DESC_SIZE] =
+{
+	0x06, 0x00, 0xff,				// USAGE_PAGE (Vendor Defined Page 1)
+	0x09, 0x01,						// USAGE (Vendor Usage 1)
+	0xa1, 0x01,						// COLLECTION (Application)
+	0x15, 0x00,						//	 LOGICAL_MINIMUM (0)
+	0x26, 0xff, 0x00,				//	 LOGICAL_MAXIMUM (255)
+	0x75, 0x08,						//	 REPORT_SIZE (8)
+
+	0x85, CTRL_REP_FIRST_ID,		//	 REPORT_ID
+	0x95, CTRL_REP_FIRST_BYTES,		//	 REPORT_COUNT
+	0x09, 0x00,						//	 USAGE (Undefined)
+	0xb2, 0x02, 0x01,				//	 FEATURE (Data,Var,Abs,Buf)
+
+	0x85, CTRL_REP_SECOND_ID,		//	 REPORT_ID
+	0x95, CTRL_REP_SECOND_BYTES,	//	 REPORT_COUNT
+	0x09, 0x00,						//	 USAGE (Undefined)
+	0xb2, 0x02, 0x01,				//	 FEATURE (Data,Var,Abs,Buf)
+
+	0xc0							// END_COLLECTION
+};
+
 
 // string table 
 __code const uint8_t usb_string_desc_0[] = {0x04, 0x03, 0x09, 0x04};
