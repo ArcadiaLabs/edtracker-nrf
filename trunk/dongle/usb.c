@@ -29,7 +29,7 @@ __xdata uint8_t usbHidIdle = 0;		// forever
 
 void usbInit(void)
 {
-	// disconnect from USB-bus since we are in this routine from a power on and not a soft reset
+	// disconnect from USB-bus
 	usbcs |= 0x08;
 	delay_ms(50);
 	usbcs &= ~0x08;

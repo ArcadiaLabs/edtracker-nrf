@@ -28,7 +28,7 @@ __code const usb_conf_desc_joystick_t usb_conf_desc =
 		sizeof(usb_conf_desc_t),
 		USB_DESC_CONFIGURATION,
 		sizeof(usb_conf_desc_joystick_t),
-		1,		// bNumInterfaces
+		2,		// bNumInterfaces
 		1,		// bConfigurationValue
 		2,		// iConfiguration
 		0x80,	// bmAttributes - bus powered, no remote wakeup
@@ -51,11 +51,11 @@ __code const usb_conf_desc_joystick_t usb_conf_desc =
 	{
 		sizeof(usb_hid_desc_t),
 		USB_DESC_HID,
-		0x0111,					// bcdHID
-		0,						// bCountryCode
-		1,						// bNumDescriptors
-		USB_DESC_HID_REPORT,	// bDescriptorType_HID
-		sizeof(usb_joystick_report_descriptor),	// wDescriptorLength
+		0x0111,							// bcdHID
+		0,								// bCountryCode
+		1,								// bNumDescriptors
+		USB_DESC_HID_REPORT,			// bDescriptorType_HID
+		USB_JOY_HID_REPORT_DESC_SIZE,	// wDescriptorLength
 	},
 	// endpoint descriptor EP1IN
 	{
@@ -67,7 +67,6 @@ __code const usb_conf_desc_joystick_t usb_conf_desc =
 		10,					// bInterval  10ms
 	},
 	
-	/*
 	// control interface descriptor
 	{
 		sizeof(usb_if_desc_t),
@@ -84,22 +83,21 @@ __code const usb_conf_desc_joystick_t usb_conf_desc =
 	{
 		sizeof(usb_hid_desc_t),
 		USB_DESC_HID,
-		0x0111,					// bcdHID
-		0,						// bCountryCode
-		1,						// bNumDescriptors
-		USB_DESC_HID_REPORT,	// bDescriptorType_HID
-		sizeof(usb_joystick_report_descriptor),	// wDescriptorLength
+		0x0111,							// bcdHID
+		0,								// bCountryCode
+		1,								// bNumDescriptors
+		USB_DESC_HID_REPORT,			// bDescriptorType_HID
+		USB_CTRL_HID_REPORT_DESC_SIZE,	// wDescriptorLength
 	},
-	// endpoint descriptor EP1IN
+	// endpoint descriptor EP2IN
 	{
 		sizeof(usb_ep_desc_t),
 		USB_DESC_ENDPOINT,
-		0x81,				// bEndpointAddress
+		0x82,				// bEndpointAddress
 		USB_EP_TYPE_INT,	// bmAttributes
-		8,					// wMaxPacketSize
+		64,					// wMaxPacketSize
 		10,					// bInterval  10ms
 	},	
-	*/
 };
 
 const __code uint8_t usb_joystick_report_descriptor[USB_JOY_HID_REPORT_DESC_SIZE] =
