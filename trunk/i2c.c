@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <compiler_mcs51.h>
+
 #include <reg24le1.h>
 #include <nrfdbg.h>
 #include <nrfutils.h>

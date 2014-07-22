@@ -3,22 +3,24 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <compiler_mcs51.h>
+
 #include "settings.h"
 #include "reg24le1.h"
 #include "nrfdbg.h"
 
 /*
 // size of these is 256 bytes
-#define NV_DATA_EXT_ENDUR0_ADDR			((__xdata settings_t*) 0xfa00)
+#define NV_DATA_EXT_ENDUR0_ADDR			((settings_t __xdata *) 0xfa00)
 #define NV_DATA_EXT_ENDUR0_PAGE_NUM		32
-#define NV_DATA_EXT_ENDUR1_ADDR			((__xdata settings_t*) 0xfb00)
+#define NV_DATA_EXT_ENDUR1_ADDR			((settings_t __xdata *) 0xfb00)
 #define NV_DATA_EXT_ENDUR1_PAGE_NUM		33
 */
 
 // size of these is 512 bytes
-#define NV_DATA_NORM_ENDUR0_ADDR		((__xdata settings_t*) 0xfc00)
+#define NV_DATA_NORM_ENDUR0_ADDR		((settings_t __xdata *) 0xfc00)
 #define NV_DATA_NORM_ENDUR0_PAGE_NUM	34
-#define NV_DATA_NORM_ENDUR1_ADDR		((__xdata settings_t*) 0xfe00)
+#define NV_DATA_NORM_ENDUR1_ADDR		((settings_t __xdata *) 0xfe00)
 #define NV_DATA_NORM_ENDUR1_PAGE_NUM	35
 
 #define NV_DATA_PAGE_SIZE				0x200
@@ -81,7 +83,7 @@ void flash_page_erase(uint8_t pn)
 
 int8_t get_current_settings_ndx(void)
 {
-	const __xdata settings_t* pStart = NV_DATA_NORM_ENDUR0_ADDR;
+	const settings_t __xdata * pStart = NV_DATA_NORM_ENDUR0_ADDR;
 	uint8_t cnt;
 	
 	// if no settings have been saved yet
@@ -95,9 +97,9 @@ int8_t get_current_settings_ndx(void)
 	return cnt;
 }
 
-const __xdata settings_t* get_settings(void)
+const settings_t __xdata * get_settings(void)
 {
-	const __xdata settings_t* pStart = NV_DATA_NORM_ENDUR0_ADDR;
+	const settings_t __xdata * pStart = NV_DATA_NORM_ENDUR0_ADDR;
 	int8_t ndx = get_current_settings_ndx();
 	
 	if (ndx == -1)
@@ -108,7 +110,7 @@ const __xdata settings_t* get_settings(void)
 
 void save_settings(settings_t* pNewSettings)
 {
-	const __xdata settings_t* pStart = NV_DATA_NORM_ENDUR0_ADDR;
+	const settings_t __xdata * pStart = NV_DATA_NORM_ENDUR0_ADDR;
 	int8_t new_ndx = get_current_settings_ndx() + 1;
 
 	// if the two pages are full

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RF_HEAD_H
+#define RF_HEAD_H
 
 // stat counters
 //extern uint32_t plos_total, arc_total, rf_packets_total;
@@ -13,3 +14,5 @@ bool rf_head_send_message(const void* buff, const uint8_t num_bytes);
 uint8_t rf_head_read_ack_payload(void* buff, const uint8_t buff_size);
 
 bool rf_head_process_ack_payloads(uint8_t* msg_buff_free, uint8_t* msg_buff_capacity);
+
+#endif

@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <compiler_mcs51.h>
 
 #include "mpu_dmp_firmware.h"
 
