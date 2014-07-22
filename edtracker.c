@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <math.h>
 
+#include <compiler_mcs51.h>
+
 #include <reg24le1.h>
 #include <nrfutils.h>
 #include <nrfdbg.h>
@@ -18,12 +20,12 @@
 
 void hw_init()
 {
-	P0DIR = 0b11110000;		// P0.0 P0.1 P0.2 are the LEDs and they are outputs
-							// P0.3 is the UART TX - output
-							// P0.5 is the push button - input
-							// P0.6 is the MPU interrupt pin - input
+	P0DIR = 0xf0;		// P0.0 P0.1 P0.2 are the LEDs and they are outputs
+                        // P0.3 is the UART TX - output
+						// P0.5 is the push button - input
+						// P0.6 is the MPU interrupt pin - input
 
-	P0CON = 0b01010101;		// turn on the pullup for the recenter button
+	P0CON = 0x55;		// turn on the pullup for the recenter button
 	
 	LED_RED		= 0;	// LEDs are off
 	LED_YELLOW	= 0;

@@ -3,7 +3,6 @@
 #include <stdio.h>
 
 #include "reg24le1.h"
-#include "tgtdefs.h"
 #include "nrfdbg.h"
 
 #include "sleeping.h"

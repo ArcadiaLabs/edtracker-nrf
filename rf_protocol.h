@@ -6,8 +6,8 @@
 // the channel number is hardcoded for the moment
 #define CHANNEL_NUM		115
 
-extern const __code uint8_t HeadAddr[NRF_ADDR_SIZE];
-extern const __code uint8_t DongleAddr[NRF_ADDR_SIZE];
+extern __code const uint8_t HeadAddr[NRF_ADDR_SIZE];
+extern __code const uint8_t DongleAddr[NRF_ADDR_SIZE];
 
 // this message is sent to the USB dongle over the radio
 typedef struct

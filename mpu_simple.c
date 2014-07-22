@@ -316,7 +316,7 @@ void dmp_enable_feature(bool send_cal_gyro)
 
 #define PACKET_LENGTH	32
 
-bool mpu_read_fifo_stream(uint16_t length, uint8_t* data, uint8_t* more)
+bool mpu_read_fifo_stream(uint16_t length, uint8_t* buffer, uint8_t* more)
 {
 	uint8_t tmp[2];
 	uint16_t fifo_count;
@@ -337,7 +337,7 @@ bool mpu_read_fifo_stream(uint16_t length, uint8_t* data, uint8_t* more)
 	if (fifo_count % length)
 		return false;
 
-	if (!i2c_read(FIFO_R_W, length, data))
+	if (!i2c_read(FIFO_R_W, length, buffer))
 		return false;
 
 	*more = (fifo_count != length);
@@ -449,7 +449,7 @@ void mpu_init(bool send_cal_gyro)
 void msg(char* m, int16_t* v)
 {
 #ifdef DBG_MODE
-	dprintf("%s %i   %i   %i\n", m, v[0], v[1], v[2]);
+	printf("%s %i   %i   %i\n", m, v[0], v[1], v[2]);
 #else
 	m, v;
 #endif

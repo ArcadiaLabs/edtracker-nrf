@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <compiler_mcs51.h>
+
+#include "reg24le1.h"
 #include "nRF24L.h"
 #include "edtracker.h"
 #include "rf_protocol.h"

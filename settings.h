@@ -10,7 +10,7 @@ typedef struct
 	int16_t		accel_bias[3];
 } settings_t;
 
-const __xdata settings_t* get_settings(void);
+const settings_t __xdata * get_settings(void);
 void save_settings(settings_t* pNewSettings);
 
 // these are for testing
