@@ -193,6 +193,10 @@ typedef struct
 	usb_if_desc_t	if1;
 	usb_hid_desc_t	hid1;
 	usb_ep_desc_t	ep1in;
+
+	usb_if_desc_t	if2;
+	usb_hid_desc_t	hid2;
+	usb_ep_desc_t	ep2in;
 } usb_conf_desc_joystick_t;
 
 #define USB_STRING_DESC_COUNT			4

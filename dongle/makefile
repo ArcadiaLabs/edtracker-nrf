@@ -3,7 +3,7 @@ CFLAGS    = --model-large -I.. -I../mcu-lib -DNRF24LU1
 #CFLAGS   += -DDBG_MODE=0
 LFLAGS    = --code-loc 0x0000 --code-size 0x8000 --xram-loc 0x8000 --xram-size 0x800
 ASFLAGS   = -plosgff
-RELFILES  = main.rel usb_desc.rel mymath.rel rf_dngl.rel usb.rel reports.rel rf_addr.rel
+RELFILES  = main.rel usb_desc.rel mymath.rel rf_dngl.rel usb.rel reports.rel rf_addr.rel proc_packet.rel
 RELFILES += nrfutils.rel nrfdbg.rel nRF24L.rel crtxinit.rel
 
 VPATH    = ../mcu-lib:../
