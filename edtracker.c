@@ -51,6 +51,7 @@ void hw_init()
 	dputs("init OK");
 }
 
+/*
 void test_bias(void)
 {
 	int32_t g[3];
@@ -96,6 +97,7 @@ void test_bias(void)
 		}
 	}
 }
+*/
 
 #define LED_PCKT_TOTAL		150
 #define LED_PCKT_LED_ON		2
