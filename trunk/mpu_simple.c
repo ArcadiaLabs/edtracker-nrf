@@ -445,7 +445,6 @@ void mpu_init(bool send_cal_gyro)
 	dmp_init(send_cal_gyro);
 }
 
-
 void msg(char* m, int16_t* v)
 {
 #ifdef DBG_MODE
