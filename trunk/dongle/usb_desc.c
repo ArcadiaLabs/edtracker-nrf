@@ -13,7 +13,7 @@ __code const usb_dev_desc_t usb_dev_desc =
 	0,				// bDeviceProtocol
 	USB_EP0_SIZE,	// bMaxPacketSize0
 	0x40aa,			// idVendor			- some unknown vendor id
-	0x9005,			// idProduct
+	0x9006,			// idProduct
 	0x0001,			// bcdDevice
 	1,				// iManufacturer
 	2,				// iProduct
@@ -63,15 +63,15 @@ __code const usb_conf_desc_joystick_t usb_conf_desc =
 		USB_DESC_ENDPOINT,
 		0x81,				// bEndpointAddress
 		USB_EP_TYPE_INT,	// bmAttributes
-		8,					// wMaxPacketSize
-		10,					// bInterval  10ms
+		USB_EP1_SIZE,		// wMaxPacketSize
+		10,					// bInterval  in ms
 	},
 	
 	// control interface descriptor
 	{
 		sizeof(usb_if_desc_t),
 		USB_DESC_INTERFACE,
-		0,		// bInterfaceNumber
+		1,		// bInterfaceNumber
 		0,		// bAlternateSetting
 		1,		// bNumEndpoints
 		3,		// bInterfaceClass		- HID
@@ -95,8 +95,8 @@ __code const usb_conf_desc_joystick_t usb_conf_desc =
 		USB_DESC_ENDPOINT,
 		0x82,				// bEndpointAddress
 		USB_EP_TYPE_INT,	// bmAttributes
-		64,					// wMaxPacketSize
-		10,					// bInterval  10ms
+		USB_EP2_SIZE,		// wMaxPacketSize
+		50,					// bInterval  in ms
 	},	
 };
 

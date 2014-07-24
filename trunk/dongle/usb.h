@@ -215,6 +215,7 @@ extern __code const uint16_t usb_string_desc_1[];
 extern __code const uint16_t usb_string_desc_2[];
 extern __code const uint16_t usb_string_desc_3[];
 extern __code const uint8_t usb_joystick_report_descriptor[USB_JOY_HID_REPORT_DESC_SIZE];
+extern __code const uint8_t usb_control_report_descriptor[USB_CTRL_HID_REPORT_DESC_SIZE];
 
 void usbInit(void);
 void usbPoll(void);
@@ -229,4 +230,5 @@ __xdata extern uint8_t usbIdleRate;				// in 4 ms units
 
 // endpoint buffer sizes
 #define USB_EP0_SIZE	0x40
-#define USB_EP1_SIZE	0x06
+#define USB_EP1_SIZE	0x08
+#define USB_EP2_SIZE	0x08
