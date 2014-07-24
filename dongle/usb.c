@@ -45,7 +45,7 @@ void usbInit(void)
 	
 	// we only want to get interrupts for EP0 IN/OUT
 	// the other interrupts are not needed (but EP1 IN is still used)
-	in_ien = 0x03;		// enable IN interrupts on EP0 and EP1
+	in_ien = 0x07;		// enable IN interrupts on EP0, EP1 and EP2
 	in_irq = 0x1f;		// reset IN interrupt flags
 	out_ien = 0x01;		// enable OUT interrupts on EP0
 	out_irq = 0x1f;		// reset OUT interrupt flags
@@ -61,12 +61,12 @@ void usbInit(void)
 
 	bin1addr = USB_EP0_SIZE/2;
 	bin2addr = bin1addr + USB_EP1_SIZE/2;
-	bin3addr = bin2addr + 0;
+	bin3addr = bin2addr + USB_EP2_SIZE/2;
 	bin4addr = bin3addr + 0;
 	bin5addr = bin4addr + 0;
 
 	// enable endpoints
-	inbulkval = 0x03;	// enables IN endpoints on EP0 and EP1
+	inbulkval = 0x07;	// enables IN endpoints on EP0, EP1 and EP2
 	outbulkval = 0x01;	// enables OUT endpoints on EP0
 	inisoval = 0x00;	// ISO not used
 	outisoval = 0x00;	// ISO not used
@@ -156,6 +156,9 @@ void usbGetDescriptor(void)
 		{
 			packetizer_data_ptr = usb_joystick_report_descriptor;
 			packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, USB_JOY_HID_REPORT_DESC_SIZE);
+		} else if (usbReqHidGetDesc.interface == 1) {
+			packetizer_data_ptr = usb_control_report_descriptor;
+			packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, USB_CTRL_HID_REPORT_DESC_SIZE);
 		}
 	}
 
@@ -419,10 +422,10 @@ void usbPoll(void)
 		break;
 
 	case INT_EP1IN:
-		in_irq = 0x02;
+		in_irq = 0x02;	// clear interrupt flag
 		break;
 	case INT_EP2IN:
-		in_irq = 0x04;
+		in_irq = 0x04;	// clear interrupt flag
 		break;
 	}
 }
