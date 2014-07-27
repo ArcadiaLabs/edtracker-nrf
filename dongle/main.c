@@ -24,13 +24,12 @@ void main(void)
 
 	P0DIR = 0x00;	// all outputs
 	P0ALT = 0x00;	// all GPIO default behavior
+	P0 = 0;
 	
 	LED_off();
-
+	
 	usbInit();
 	dbgInit();
-	
-	dputs("\nlu1 online");
 
 	rf_dngl_init();
 
@@ -39,7 +38,7 @@ void main(void)
 	for (;;)
 	{
 		usbPoll();	// handles USB interrupts
-		dbgPoll();	// send chars from the uart TX buffer
+		dbgPoll();	// send chars from the UART TX buffer
 		
 		// try to read the recv buffer, then process the received data
 		if (rf_dngl_recv(&packet, sizeof packet) == sizeof packet)
