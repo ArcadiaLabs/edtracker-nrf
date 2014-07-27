@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "reg24lu1.h"
@@ -52,21 +53,21 @@ void usbInit(void)
 
 	// setup the USB RAM
 	bout1addr = USB_EP0_SIZE/2;
-	bout2addr = bout1addr + 0;
-	bout3addr = bout2addr + 0;
-	bout4addr = bout3addr + 0;
-	bout5addr = bout4addr + 0;
+	bout2addr = bout1addr + USB_DEFAULT_EP_SIZE/2;
+	bout3addr = bout2addr + USB_DEFAULT_EP_SIZE/2;
+	bout4addr = bout3addr + USB_DEFAULT_EP_SIZE/2;
+	bout5addr = bout4addr + USB_DEFAULT_EP_SIZE/2;
 
 	binstaddr = bout5addr/4;	// IN start address
 
 	bin1addr = USB_EP0_SIZE/2;
 	bin2addr = bin1addr + USB_EP1_SIZE/2;
 	bin3addr = bin2addr + USB_EP2_SIZE/2;
-	bin4addr = bin3addr + 0;
-	bin5addr = bin4addr + 0;
+	bin4addr = bin3addr + USB_DEFAULT_EP_SIZE/2;
+	bin5addr = bin4addr + USB_DEFAULT_EP_SIZE/2;
 
 	// enable endpoints
-	inbulkval = 0x07;	// enables IN endpoints on EP0, EP1 and EP2
+	inbulkval = 0x07;	// enables IN endpoints on EP0 and EP1
 	outbulkval = 0x01;	// enables OUT endpoints on EP0
 	inisoval = 0x00;	// ISO not used
 	outisoval = 0x00;	// ISO not used
@@ -89,7 +90,7 @@ bool usbHasIdleElapsed(void)
 
 void packetizer_isr_ep0_in(void)
 {
-	uint8_t size, i;
+	__data uint8_t size, i;
 
 	if (packetizer_data_size == 0)
 	{
@@ -154,11 +155,11 @@ void usbGetDescriptor(void)
 	} else if (descriptor == USB_DESC_HID_REPORT) {
 		if (usbReqHidGetDesc.interface == 0)
 		{
-			packetizer_data_ptr = usb_joystick_report_descriptor;
-			packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, USB_JOY_HID_REPORT_DESC_SIZE);
+			packetizer_data_ptr = joystick_hid_report_descriptor;
+			packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, JOYSTICK_HID_REPORT_DESC_SIZE);
 		} else if (usbReqHidGetDesc.interface == 1) {
-			packetizer_data_ptr = usb_control_report_descriptor;
-			packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, USB_CTRL_HID_REPORT_DESC_SIZE);
+			packetizer_data_ptr = control_hid_report_descriptor;
+			packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, CONTROL_HID_REPORT_DESC_SIZE);
 		}
 	}
 
@@ -384,9 +385,9 @@ void usbPoll(void)
 		usbirq = 0x01;	// clear interrupt flag
 
 		usbRequestReceived();	// process setup data
-
+		
 		// arm the EP0 OUT in case we have data after the request
-		out0bc = 0x40;
+		out0bc = USB_EP0_SIZE;
 		
 		break;
 	case INT_SOF:		// SOF packet
@@ -415,17 +416,17 @@ void usbPoll(void)
 		
 	case INT_EP0OUT:
 		out_irq = 0x01;	// clear interrupt flag
-		
 		usbRequestDataReceived();
-		
-		out0bc = 0x40;	// rearm the next EP0 OUT
+		out0bc = USB_EP0_SIZE;	// rearm the next EP0 OUT
 		break;
 
 	case INT_EP1IN:
 		in_irq = 0x02;	// clear interrupt flag
 		break;
+	/*
 	case INT_EP2IN:
 		in_irq = 0x04;	// clear interrupt flag
 		break;
+		*/
 	}
 }
