@@ -1,4 +1,5 @@
-#pragma once
+#ifndef USB_H
+#define USB_H
 
 // standard request codes
 #define USB_REQ_GET_STATUS			0x00
@@ -193,21 +194,14 @@ typedef struct
 	usb_if_desc_t	if1;
 	usb_hid_desc_t	hid1;
 	usb_ep_desc_t	ep1in;
-
-	usb_if_desc_t	if2;
-	usb_hid_desc_t	hid2;
-	usb_ep_desc_t	ep2in;
 } usb_conf_desc_joystick_t;
 
 #define USB_STRING_DESC_COUNT			4
-#define JOYSTICK_HID_REPORT_DESC_SIZE	30
-//#define CONTROL_HID_REPORT_DESC_SIZE	33
-#define CONTROL_HID_REPORT_DESC_SIZE	39
+#define JOYSTICK_HID_REPORT_DESC_SIZE	73
 
-#define CTRL_REP_FIRST_ID		1
-#define CTRL_REP_FIRST_BYTES	16
-#define CTRL_REP_SECOND_ID		2
-#define CTRL_REP_SECOND_BYTES	16
+#define JOYSTICK_REPORT_ID		1
+#define CTRL_REPORT_ID			2
+#define CTRL_REPORT_BYTES		8
 
 extern __code const usb_conf_desc_joystick_t usb_conf_desc;
 extern __code const usb_dev_desc_t usb_dev_desc;
@@ -216,18 +210,18 @@ extern __code const uint16_t usb_string_desc_1[];
 extern __code const uint16_t usb_string_desc_2[];
 extern __code const uint16_t usb_string_desc_3[];
 extern __code const uint8_t joystick_hid_report_descriptor[JOYSTICK_HID_REPORT_DESC_SIZE];
-extern __code const uint8_t control_hid_report_descriptor[CONTROL_HID_REPORT_DESC_SIZE];
 
 void usbInit(void);
 void usbPoll(void);
 
 bool usbHasIdleElapsed(void);
 
-__xdata extern uint8_t usbIdleRate;
+extern __xdata uint8_t usbIdleRate;
 
 // endpoint buffer sizes
-#define USB_EP0_SIZE	0x20
-#define USB_EP1_SIZE	0x08
-#define USB_EP2_SIZE	0x20
+#define USB_EP0_SIZE	0x40
+#define USB_EP1_SIZE	0x10
 
 #define USB_DEFAULT_EP_SIZE		0x08
+
+#endif	// USB_H

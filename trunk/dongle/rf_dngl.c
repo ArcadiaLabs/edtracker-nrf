@@ -2,7 +2,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "tgtdefs.h"
+#include <compiler_mcs51.h>
+
 #include "rf_protocol.h"
 #include "nRF24L.h"
 #include "hw_defs.h"
@@ -66,7 +67,7 @@ void rf_dngl_init(void)
 	nRF_CE_hi();		// start receiving
 }
 
-uint8_t rf_dngl_recv(__xdata void* buff, uint8_t buff_size)
+uint8_t rf_dngl_recv(void __xdata * buff, uint8_t buff_size)
 {
 	uint8_t ret_val = 0;
 	
@@ -100,7 +101,7 @@ uint8_t rf_dngl_recv(__xdata void* buff, uint8_t buff_size)
 	return ret_val;
 }
 
-void rf_dngl_queue_ack_payload(__xdata void* buff, const uint8_t num_bytes)
+void rf_dngl_queue_ack_payload(void __xdata * buff, const uint8_t num_bytes)
 {
 	// get the TX FIFO status
 	nRF_ReadReg(FIFO_STATUS);

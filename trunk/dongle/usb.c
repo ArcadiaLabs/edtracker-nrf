@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define DEFINE_USB_REGS
+
 #include "reg24lu1.h"
 #include "nrfutils.h"
 #include "reports.h"
@@ -11,7 +13,6 @@
 
 #include "usb.h"
 
-#define DEFINE_USB_REGS
 #include "usb_regs.h"
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -19,7 +20,7 @@
 uint8_t		usb_current_config;
 usb_state_t	usb_state;
 
-__code const uint8_t* packetizer_data_ptr;
+uint8_t const __code * packetizer_data_ptr;
 uint8_t packetizer_data_size;
 
 // We are counting SOF packets as a timer for the HID idle rate.
@@ -36,17 +37,17 @@ void usbInit(void)
 	usbcs &= ~0x08;
 	
 	// set up interrupts and clear interrupt flags
-	usbien = 0b00011011;	// bit	description
-							// 5-7	unused
-							// 4	uresie	USB reset interrupt enable
-							// 3	suspie	USB suspend interrupt enable
-							// 2	sutokie	SETUP token interrupt enable
-							// 1	sofie	Start of frame interrupt enable
-							// 0	sudavie	SETUP data valid interrupt enable
+	usbien = 0x1B;	// bit	description
+					// 5-7	unused
+					// 4	uresie	USB reset interrupt enable
+					// 3	suspie	USB suspend interrupt enable
+					// 2	sutokie	SETUP token interrupt enable
+					// 1	sofie	Start of frame interrupt enable
+					// 0	sudavie	SETUP data valid interrupt enable
 	
 	// we only want to get interrupts for EP0 IN/OUT
 	// the other interrupts are not needed (but EP1 IN is still used)
-	in_ien = 0x07;		// enable IN interrupts on EP0, EP1 and EP2
+	in_ien = 0x03;		// enable IN interrupts on EP0 and EP1
 	in_irq = 0x1f;		// reset IN interrupt flags
 	out_ien = 0x01;		// enable OUT interrupts on EP0
 	out_irq = 0x1f;		// reset OUT interrupt flags
@@ -62,12 +63,12 @@ void usbInit(void)
 
 	bin1addr = USB_EP0_SIZE/2;
 	bin2addr = bin1addr + USB_EP1_SIZE/2;
-	bin3addr = bin2addr + USB_EP2_SIZE/2;
+	bin3addr = bin2addr + USB_DEFAULT_EP_SIZE/2;
 	bin4addr = bin3addr + USB_DEFAULT_EP_SIZE/2;
 	bin5addr = bin4addr + USB_DEFAULT_EP_SIZE/2;
 
 	// enable endpoints
-	inbulkval = 0x07;	// enables IN endpoints on EP0 and EP1
+	inbulkval = 0x03;	// enables IN endpoints on EP0 and EP1
 	outbulkval = 0x01;	// enables OUT endpoints on EP0
 	inisoval = 0x00;	// ISO not used
 	outisoval = 0x00;	// ISO not used
@@ -90,7 +91,7 @@ bool usbHasIdleElapsed(void)
 
 void packetizer_isr_ep0_in(void)
 {
-	__data uint8_t size, i;
+	__data uint8_t pckt_size, i;
 
 	if (packetizer_data_size == 0)
 	{
@@ -103,18 +104,18 @@ void packetizer_isr_ep0_in(void)
 	}
 
 	// Send the smallest of the data size and USB RAM EP0 IN size
-	size = MIN(packetizer_data_size, USB_EP0_SIZE);
+	pckt_size = MIN(packetizer_data_size, USB_EP0_SIZE);
 
 	// Copy data to the USB-controller buffer
-	for (i = 0; i < size; ++i)
+	for (i = 0; i < pckt_size; ++i)
 		in0buf[i] = *packetizer_data_ptr++;
 
 	// Tell the USB-controller how many bytes to send
 	// If a IN is received from host after this the USB-controller will send the data
-	in0bc = size;
+	in0bc = pckt_size;
 
 	// update the packetizer data count
-	packetizer_data_size -= size;
+	packetizer_data_size -= pckt_size;
 }
 
 void usbGetDescriptor(void)
@@ -157,9 +158,6 @@ void usbGetDescriptor(void)
 		{
 			packetizer_data_ptr = joystick_hid_report_descriptor;
 			packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, JOYSTICK_HID_REPORT_DESC_SIZE);
-		} else if (usbReqHidGetDesc.interface == 1) {
-			packetizer_data_ptr = control_hid_report_descriptor;
-			packetizer_data_size = MIN(usbReqGetDesc.lengthLSB, CONTROL_HID_REPORT_DESC_SIZE);
 		}
 	}
 

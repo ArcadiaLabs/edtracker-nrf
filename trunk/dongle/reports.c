@@ -3,8 +3,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <compiler_mcs51.h>
+
 #include "reports.h"
-#include "keycode.h"
 #include "rf_protocol.h"
 #include "rf_dngl.h"
 

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef REPORTS_H
+#define REPORTS_H
 
 void reset_joystick_report(void);
 
@@ -12,3 +13,5 @@ typedef struct
 } hid_joystick_report_t;
 
 extern hid_joystick_report_t	usb_joystick_report;	// the HID keyboard report
+
+#endif	// REPORTS_H
