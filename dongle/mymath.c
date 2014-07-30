@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <compiler_mcs51.h>
 
 #include "mymath.h"
 

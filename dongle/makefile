@@ -19,7 +19,7 @@ $(TARGET).hex: $(RELFILES)
 	sdas8051 $(ASFLAGS) $@ $< 
 
 clean:
-	rm -f *.hex *.lnk *.lst *.map *.rel *.rst *.sym *.mem *.lk *.asm *.lk *.cdb *.omf
+	rm -f *.hex *.lnk *.lst *.LST *.map *.rel *.rst *.sym *.mem *.lk *.asm *.lk *.cdb *.omf
 
 all: clean $(TARGET).hex
 

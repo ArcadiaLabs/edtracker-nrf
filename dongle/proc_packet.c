@@ -2,6 +2,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include <compiler_mcs51.h>
+
 #include "rf_protocol.h"
 #include "proc_packet.h"
 #include "mymath.h"

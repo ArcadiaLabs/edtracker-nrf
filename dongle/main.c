@@ -20,7 +20,7 @@
 void main(void)
 {
 	bool joystick_report_ready = false;
-	mpu_packet_t packet;
+	__xdata mpu_packet_t packet;
 
 	P0DIR = 0x00;	// all outputs
 	P0ALT = 0x00;	// all GPIO default behavior
@@ -42,7 +42,10 @@ void main(void)
 		
 		// try to read the recv buffer, then process the received data
 		if (rf_dngl_recv(&packet, sizeof packet) == sizeof packet)
+		{
 			joystick_report_ready |= process_packet(&packet);
+			TogP(P00);
+		}
 
 		// send the report if the endpoint is not busy
 		if ((in1cs & 0x02) == 0   &&   (joystick_report_ready  ||  usbHasIdleElapsed()))
@@ -54,6 +57,8 @@ void main(void)
 			in1bc = USB_EP1_SIZE;
 			
 			joystick_report_ready = false;
+			
+			TogP(P01);
 		}
 	}
 }
