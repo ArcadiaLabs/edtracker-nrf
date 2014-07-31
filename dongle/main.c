@@ -51,10 +51,10 @@ void main(void)
 		if ((in1cs & 0x02) == 0   &&   (joystick_report_ready  ||  usbHasIdleElapsed()))
 		{
 			// copy the joystick report into the endpoint buffer
-			memcpy(in1buf, &usb_joystick_report, USB_EP1_SIZE);
+			memcpy(in1buf, &usb_joystick_report, sizeof(usb_joystick_report));
 
 			// send the data on it's way
-			in1bc = USB_EP1_SIZE;
+			in1bc = sizeof(usb_joystick_report);
 			
 			joystick_report_ready = false;
 			

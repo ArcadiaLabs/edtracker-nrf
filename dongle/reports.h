@@ -7,6 +7,7 @@ void reset_joystick_report(void);
 // this is what the data that we send to the host is comprised of
 typedef struct
 {
+	uint8_t	report_id;	// == JOYSTICK_REPORT_ID
 	int16_t	x;
 	int16_t	y;
 	int16_t	z;
