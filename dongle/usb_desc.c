@@ -72,6 +72,7 @@ __code const usb_conf_desc_joystick_t usb_conf_desc =
 
 __code const uint8_t joystick_hid_report_descriptor[JOYSTICK_HID_REPORT_DESC_SIZE] =
 {
+/*
 0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
 0x09, 0x02,        // Usage (Mouse)
 0xA1, 0x01,        // Collection (Application)
@@ -110,8 +111,8 @@ __code const uint8_t joystick_hid_report_descriptor[JOYSTICK_HID_REPORT_DESC_SIZ
 0xC0,              // End Collection
 
 // 73 bytes
+*/
 
-/*
 0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
 0x09, 0x04,        // Usage (Joystick)
 0xA1, 0x01,        // Collection (Application)
@@ -129,7 +130,7 @@ __code const uint8_t joystick_hid_report_descriptor[JOYSTICK_HID_REPORT_DESC_SIZ
 0xC0,              // End Collection
 
 // 30 bytes
-*/
+
 /*
 0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
 0x09, 0x04,        // Usage (Joystick)

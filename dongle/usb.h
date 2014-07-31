@@ -197,7 +197,7 @@ typedef struct
 } usb_conf_desc_joystick_t;
 
 #define USB_STRING_DESC_COUNT			4
-#define JOYSTICK_HID_REPORT_DESC_SIZE	73
+#define JOYSTICK_HID_REPORT_DESC_SIZE	30
 
 #define JOYSTICK_REPORT_ID		1
 #define CTRL_REPORT_ID			2
