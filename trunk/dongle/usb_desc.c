@@ -93,7 +93,7 @@ __code const uint8_t joystick_hid_report_descriptor[JOYSTICK_HID_REPORT_DESC_SIZ
 	0x15, 0x00,					//     Logical Minimum (0)
 	0x26, 0xFF, 0x00,			//     Logical Maximum (255)
 	0x75, 0x08,					//     Report Size (8)
-	0x95, CTRL_REPORT_BYTES,    //     Report Count
+	0x95, CTRL_REPORT_BYTES,    //     Report Count (12 at the moment)
 	0x09, 0x00,					//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x00)
 	0xB2, 0x02, 0x01,			//     Feature (Data,Variable,Absolute,No wrap,Linear,Preferred State,No Null position,Non Volatile,Buffered Bytes)
 	0xC0,						// End Collection
