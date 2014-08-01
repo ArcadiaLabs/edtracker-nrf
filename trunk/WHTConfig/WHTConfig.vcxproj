@@ -94,7 +94,6 @@
     <ClCompile Include="wht_device.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="icon.ico" />
     <None Include="icons\icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
