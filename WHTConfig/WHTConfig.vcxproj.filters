@@ -51,9 +51,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="icon.ico">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="icons\icon.ico">
       <Filter>Resource Files</Filter>
     </None>
