@@ -30,7 +30,7 @@
     <ClInclude Include="wht_device.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="debug.h">
+    <ClInclude Include="myutils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -52,7 +52,7 @@
     <ClCompile Include="wht_device.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="debug.cpp">
+    <ClCompile Include="myutils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
