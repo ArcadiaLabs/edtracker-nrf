@@ -2,7 +2,7 @@
 
 #include "wht_device.h"
 #include "hid.h"
-#include "debug.h"
+#include "myutils.h"
 
 #define VENDOR_ID	0x40AA
 #define PRODUCT_ID	0x9007
@@ -28,11 +28,9 @@ bool WHTDevice::Open()
 	SP_DEVICE_INTERFACE_DATA iface;
 	SP_DEVICE_INTERFACE_DETAIL_DATA* details;
 	HIDD_ATTRIBUTES attrib;
-	HANDLE h;
-	BOOL ret;
 
 	HidD_GetHidGuid(&guid);
-	info = SetupDiGetClassDevsW(&guid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+	info = SetupDiGetClassDevs(&guid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
 	if (info == INVALID_HANDLE_VALUE)
 		return false;
 
@@ -40,6 +38,7 @@ bool WHTDevice::Open()
 	{
 		debug(index);
 
+		// get the next HID device
 		iface.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 		if (!SetupDiEnumDeviceInterfaces(info, NULL, &guid, index, &iface))
 		{
@@ -47,37 +46,41 @@ bool WHTDevice::Open()
 			break;
 		}
 
-		SetupDiGetDeviceInterfaceDetailW(info, &iface, NULL, 0, &required_size, NULL);
-		required_size *= 3;
+		// get the required size for details 
+		SetupDiGetDeviceInterfaceDetail(info, &iface, NULL, 0, &required_size, NULL);
+
+		// allocate and clear
 		details = (SP_DEVICE_INTERFACE_DETAIL_DATA*) malloc(required_size);
 		if (details == NULL)
 			continue;
 
-
 		memset(details, 0, required_size);
+
+		// now get the details
 		details->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-		ret = SetupDiGetDeviceInterfaceDetailW(info, &iface, details, required_size, NULL, NULL);
-		if (!ret)
+		if (!SetupDiGetDeviceInterfaceDetail(info, &iface, details, required_size, NULL, NULL))
 		{
-			debug(::GetLastError());
 			free(details);
 			continue;
 		}
 
-		h = CreateFile(details->DevicePath, GENERIC_READ|GENERIC_WRITE,
+		// open the HID device
+		HANDLE h = CreateFile(details->DevicePath, GENERIC_READ|GENERIC_WRITE,
 						FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
 						FILE_FLAG_OVERLAPPED, NULL);
 		free(details);
 		if (h == INVALID_HANDLE_VALUE)
 			continue;
+
+		// get the device's attributes
 		attrib.Size = sizeof(HIDD_ATTRIBUTES);
-		ret = HidD_GetAttributes(h, &attrib);
-		if (!ret)
+		if (!HidD_GetAttributes(h, &attrib))
 		{
 			CloseHandle(h);
 			continue;
 		}
 		
+		// is this the device we need?
 		if (attrib.VendorID != VENDOR_ID  ||  attrib.ProductID != PRODUCT_ID)
 		{
 			CloseHandle(h);
@@ -107,41 +110,25 @@ void WHTDevice::Close()
 bool WHTDevice::GetFeatureReport(uint8_t* buffer, int report_size, uint8_t report_id)
 {
 	const int buff_size = report_size + 1;
-	std::auto_ptr<uint8_t> rcvBuff(new uint8_t(buff_size));
+	std::auto_ptr<uint8_t> rcvBuff(new uint8_t[buff_size]);
 	rcvBuff.get()[0] = report_id;
-	if (HidD_GetFeature(hDevice, buffer, buff_size) == 0)
-		//throw std::string("Unable to read data from HID device");
+	if (HidD_GetFeature(hDevice, buffer, buff_size) == FALSE)
 		return false;
 
 	memcpy(buffer, rcvBuff.get() + 1, report_size);
 	
-#ifdef LOG_HID_TRAFFIC
-	printf("-- Rep ");
-	for (int c = 0; c < report_size; ++c)
-		printf("%02x ", buffer[c]);
-	printf("\n");
-#endif	
-
 	return true;
 }
 
-bool WHTDevice::SetFeatureReport(const uint8_t* buffer, int bytes, int report_size, uint8_t report_id)
+bool WHTDevice::SetFeatureReport(const uint8_t* buffer, int report_size, uint8_t report_id)
 {
-#ifdef LOG_HID_TRAFFIC
-	printf("-- W  ");
-	for (int c = 0; c < bytes; ++c)
-		printf("%02x ", buffer[c]);
-	printf("\n");
-#endif	
-
-	// alloc and clear the buffer
+	// alloc the buffer
 	int buff_size = report_size + 1;
-	std::auto_ptr<uint8_t> sendBuff(new uint8_t(buff_size));
-	memset(sendBuff.get(), 0, buff_size);
+	std::auto_ptr<uint8_t> sendBuff(new uint8_t[buff_size]);
 
 	// set the report ID and the data
 	sendBuff.get()[0] = report_id;
-	memcpy(sendBuff.get() + 1, buffer, bytes);
+	memcpy(sendBuff.get() + 1, buffer, report_size);
 		
 	return HidD_SetFeature(hDevice, sendBuff.get(), buff_size) == TRUE;
 }
