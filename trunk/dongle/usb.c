@@ -10,6 +10,7 @@
 #include "reports.h"
 #include "rf_protocol.h"
 #include "rf_dngl.h"
+#include "nrfdbg.h"
 
 #include "usb.h"
 
@@ -282,16 +283,30 @@ void usbHidRequest(void)
 	if (bRequest == USB_REQ_HID_SET_REPORT)
 	{
 		// we have to wait for the data
+		dprintf("set id=%d type=%d\n", usbReqHidGetSetReport.reportID, usbReqHidGetSetReport.reportType);
 
 	} else if (bRequest == USB_REQ_HID_GET_REPORT) {
 
 		// this requests the HID report we defined with the HID report descriptor.
 		// this is usually sent over EP1 IN, but can be sent over EP0 too.
 
-		memcpy(in0buf, &usb_joystick_report, sizeof(usb_joystick_report));
+		dprintf("get id=%d type=%d\n", usbReqHidGetSetReport.reportID, usbReqHidGetSetReport.reportType);
 		
-		// send the data on it's way
-		in0bc = sizeof(usb_joystick_report);
+		if (usbReqHidGetSetReport.reportID == JOYSTICK_REPORT_ID)
+		{
+			memcpy(in0buf, &usb_joystick_report, sizeof(usb_joystick_report));
+		
+			// send the data on it's way
+			in0bc = sizeof(usb_joystick_report);
+		} else if (usbReqHidGetSetReport.reportID == CTRL_REPORT_ID) {
+			dputs("sad!");
+			memset(in0buf, 11, 32);
+		
+			in0buf[0] = CTRL_REPORT_ID;
+			
+			// send the data on it's way
+			in0bc = 32;
+		}
 		
 	} else if (bRequest == USB_REQ_HID_GET_IDLE) {
 

@@ -1,9 +1,9 @@
 #include "stdafx.h"
 
 #include "resource.h"
-#include "dllwrap.h"
 #include "hid.h"
 #include "wht_device.h"
+#include "myutils.h"
 
 WHTDevice dev;
 
@@ -41,11 +41,15 @@ BOOL CALLBACK MyDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			::MessageBox(hDlg, L"Calibrate", L"Title", MB_OK | MB_ICONINFORMATION);
 		else if (ctrl_id == IDC_BTN_SEND_TO_TRACKER) {
 			uint8_t buff[31];
-			memset(buff, 0, sizeof buff);
+			memset(buff, 0, sizeof(buff));
 			dev.SetFeatureReport(buff, sizeof(buff), 2);
 		} else if (ctrl_id == IDC_BTN_CONNECT) {
 			if (!dev.Open())
 				::MessageBox(hDlg, L"Wireless head tracker dongle not found.", L"Error", MB_OK | MB_ICONERROR);
+
+			uint8_t buff[31];
+			memset(buff, 0, sizeof(buff));
+			dev.GetFeatureReport(buff, sizeof(buff), 2);
 
 		} else if (ctrl_id == IDC_BTN_DISCONNECT) {
 			dev.Close();
@@ -87,26 +91,8 @@ BOOL CALLBACK MyDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
-	// load the DLLs
-	dll hiddll;
-		
-	if (!hiddll.load(L"hid.dll"))
-	{
-		::MessageBox(0, L"Unable to load hid.dll", L"Error", MB_OK | MB_ICONERROR);
+	if (!InitHID())
 		return -1;
-	}
-
-	// get the function from the loaded DLLs
-	hiddll.get_proc(HidD_GetHidGuid, "HidD_GetHidGuid");
-	hiddll.get_proc(HidD_GetAttributes, "HidD_GetAttributes");
-	hiddll.get_proc(HidD_GetFeature, "HidD_GetFeature");
-	hiddll.get_proc(HidD_SetFeature, "HidD_SetFeature");
-
-	if (!HidD_GetHidGuid  ||  !HidD_GetAttributes  ||  !HidD_GetFeature  ||  !HidD_SetFeature)
-	{
-		::MessageBox(0, L"Unable to load function from DLLs.", L"Error", MB_OK | MB_ICONERROR);
-		return -1;
-	}
 
 	CoInitialize(0);		// GetOpenFileName needs this
 

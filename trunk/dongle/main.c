@@ -21,16 +21,25 @@ void main(void)
 {
 	bool joystick_report_ready = false;
 	__xdata mpu_packet_t packet;
+	uint8_t last_timer_capture;
+	uint8_t packet_cnt = 0, last_total_packets = 0;
 
 	P0DIR = 0x00;	// all outputs
 	P0ALT = 0x00;	// all GPIO default behavior
-	P0 = 0;
+	P0 = 0;			// all low
 	
 	LED_off();
 	
 	usbInit();
 	dbgInit();
 
+	// timer init
+	T2CON =	0b10000001;		// start 1/24 timer
+	CCEN =	0b11000000;		// capture on write to CCL3
+	last_timer_capture = 0;
+	
+	dputs("\nhere!");
+	
 	rf_dngl_init();
 
 	reset_joystick_report();
@@ -40,11 +49,21 @@ void main(void)
 		usbPoll();	// handles USB interrupts
 		dbgPoll();	// send chars from the UART TX buffer
 		
+		CCL3 = 1;	// capture CCH3
+		if (last_timer_capture > CCH3)
+		{
+			last_total_packets = packet_cnt;
+			packet_cnt = 0;
+		}
+		last_timer_capture = CCH3;
+		
+		// reset the timer
 		// try to read the recv buffer, then process the received data
 		if (rf_dngl_recv(&packet, sizeof packet) == sizeof packet)
 		{
 			joystick_report_ready |= process_packet(&packet);
-			TogP(P00);
+
+			packet_cnt++;
 		}
 
 		// send the report if the endpoint is not busy
@@ -57,8 +76,6 @@ void main(void)
 			in1bc = sizeof(usb_joystick_report);
 			
 			joystick_report_ready = false;
-			
-			TogP(P01);
 		}
 	}
 }

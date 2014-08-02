@@ -82,6 +82,7 @@ USB_REGISTER(uint8_t setupbuf[8], 0xC7E8);
 USB_REGISTER(usb_request_value_t	usbRequest, 0xC7E8);
 USB_REGISTER(usb_req_std_get_desc_t	usbReqGetDesc, 0xC7E8);
 USB_REGISTER(usb_req_hid_get_desc_t	usbReqHidGetDesc, 0xC7E8);
+USB_REGISTER(usb_req_hid_get_set_report_t usbReqHidGetSetReport, 0xC7E8);
                         
 USB_REGISTER(uint8_t out8addr, 0xC7F0);
 USB_REGISTER(uint8_t in8addr, 0xC7F8);
