@@ -22,6 +22,7 @@ usb_state_t	usb_state;
 
 uint8_t const __code * packetizer_data_ptr;
 uint8_t packetizer_data_size;
+__xdata uint8_t usb_feature_report[CTRL_REPORT_BYTES];
 
 // We are counting SOF packets as a timer for the HID idle rate.
 // usbframel & usbframeh are not good enough for this because of
@@ -280,18 +281,17 @@ void usbHidRequest(void)
 
 	if (bRequest == USB_REQ_HID_SET_REPORT)
 	{
-		// we have to wait for the 1 byte LED report
-		// which will come with the next EP0OUT interrupt
+		// we have to wait for the data
 
 	} else if (bRequest == USB_REQ_HID_GET_REPORT) {
 
 		// this requests the HID report we defined with the HID report descriptor.
 		// this is usually sent over EP1 IN, but can be sent over EP0 too.
 
-		memcpy(in0buf, &usb_joystick_report, USB_EP1_SIZE);
+		memcpy(in0buf, &usb_joystick_report, sizeof(usb_joystick_report));
 		
 		// send the data on it's way
-		in0bc = USB_EP1_SIZE;
+		in0bc = sizeof(usb_joystick_report);
 		
 	} else if (bRequest == USB_REQ_HID_GET_IDLE) {
 
