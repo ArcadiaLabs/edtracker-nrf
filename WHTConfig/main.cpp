@@ -16,7 +16,7 @@ void InitDialog(HWND hDlg)
 	SendMessage(hDlg, WM_SETICON, ICON_BIG, (LPARAM) hIconBig);
 
 	HICON hIconSmall = (HICON) LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON,
-						LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_SHARED);
+						16, 16, LR_SHARED);
 	SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM) hIconSmall);
 }
 

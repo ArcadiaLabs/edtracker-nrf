@@ -5,6 +5,7 @@
 
 // C++
 #include <memory>
+#include <string>
 
 // Windows
 #include <windows.h>
