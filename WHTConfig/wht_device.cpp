@@ -8,7 +8,7 @@
 #define PRODUCT_ID	0x9007
 
 WHTDevice::WHTDevice()
-	: hDevice(NULL), hWriteEvent(NULL)
+	: hDevice(NULL)
 {}
 
 WHTDevice::~WHTDevice()
@@ -36,8 +36,6 @@ bool WHTDevice::Open()
 
 	for (index = 0; 1; index++)
 	{
-		debug(index);
-
 		// get the next HID device
 		iface.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 		if (!SetupDiEnumDeviceInterfaces(info, NULL, &guid, index, &iface))
@@ -112,8 +110,11 @@ bool WHTDevice::GetFeatureReport(uint8_t* buffer, int report_size, uint8_t repor
 	const int buff_size = report_size + 1;
 	std::auto_ptr<uint8_t> rcvBuff(new uint8_t[buff_size]);
 	rcvBuff.get()[0] = report_id;
-	if (HidD_GetFeature(hDevice, buffer, buff_size) == FALSE)
+	if (HidD_GetFeature(hDevice, rcvBuff.get(), buff_size) == FALSE)
+	{
+		debug(GetLastError());
 		return false;
+	}
 
 	memcpy(buffer, rcvBuff.get() + 1, report_size);
 	
@@ -131,4 +132,9 @@ bool WHTDevice::SetFeatureReport(const uint8_t* buffer, int report_size, uint8_t
 	memcpy(sendBuff.get() + 1, buffer, report_size);
 		
 	return HidD_SetFeature(hDevice, sendBuff.get(), buff_size) == TRUE;
+}
+
+bool WHTDevice::GetInputReport(uint8_t* buffer, int report_size, uint8_t report_id)
+{
+	return false;
 }

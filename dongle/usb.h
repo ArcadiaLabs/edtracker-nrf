@@ -121,6 +121,17 @@ typedef struct
 
 typedef struct
 {
+	uint8_t		bmRequestType;
+	uint8_t		bRequest;		// GET_REPORT or SET_REPORT
+	uint8_t		reportID;
+	uint8_t		reportType;		// 1 - input, 2 - output, 3 - feature
+	uint8_t		interface;
+	uint8_t		filler;
+	uint16_t	wLength;
+} usb_req_hid_get_set_report_t;
+
+typedef struct
+{
 	uint8_t		bLength;
 	uint8_t		bDescriptorType;
 	uint16_t	bcdUSB;
