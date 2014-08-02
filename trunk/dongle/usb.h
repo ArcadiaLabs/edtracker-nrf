@@ -202,7 +202,7 @@ typedef struct
 
 #define JOYSTICK_REPORT_ID		1
 #define CTRL_REPORT_ID			2
-#define CTRL_REPORT_BYTES		12
+#define CTRL_REPORT_BYTES		31		// 31 for data and 1 for the reportID
 
 extern __code const usb_conf_desc_joystick_t usb_conf_desc;
 extern __code const usb_dev_desc_t usb_dev_desc;
@@ -211,6 +211,8 @@ extern __code const uint16_t usb_string_desc_1[];
 extern __code const uint16_t usb_string_desc_2[];
 extern __code const uint16_t usb_string_desc_3[];
 extern __code const uint8_t joystick_hid_report_descriptor[JOYSTICK_HID_REPORT_DESC_SIZE];
+
+extern __xdata uint8_t usb_feature_report[CTRL_REPORT_BYTES];
 
 void usbInit(void);
 void usbPoll(void);
