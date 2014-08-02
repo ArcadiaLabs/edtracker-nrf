@@ -2,6 +2,7 @@
 
 #include "wht_device.h"
 #include "hid.h"
+#include "debug.h"
 
 #define VENDOR_ID	0x40AA
 #define PRODUCT_ID	0x9007
@@ -11,7 +12,9 @@ WHTDevice::WHTDevice()
 {}
 
 WHTDevice::~WHTDevice()
-{}
+{
+	Close();
+}
 
 bool WHTDevice::Open()
 {
@@ -35,25 +38,32 @@ bool WHTDevice::Open()
 
 	for (index = 0; 1; index++)
 	{
+		debug(index);
+
 		iface.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
-		ret = SetupDiEnumDeviceInterfaces(info, NULL, &guid, index, &iface);
-		if (!ret)
+		if (!SetupDiEnumDeviceInterfaces(info, NULL, &guid, index, &iface))
 		{
 			SetupDiDestroyDeviceInfoList(info);
 			break;
 		}
+
 		SetupDiGetDeviceInterfaceDetailW(info, &iface, NULL, 0, &required_size, NULL);
+		required_size *= 3;
 		details = (SP_DEVICE_INTERFACE_DETAIL_DATA*) malloc(required_size);
 		if (details == NULL)
 			continue;
+
+
 		memset(details, 0, required_size);
 		details->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 		ret = SetupDiGetDeviceInterfaceDetailW(info, &iface, details, required_size, NULL, NULL);
 		if (!ret)
 		{
+			debug(::GetLastError());
 			free(details);
 			continue;
 		}
+
 		h = CreateFile(details->DevicePath, GENERIC_READ|GENERIC_WRITE,
 						FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
 						FILE_FLAG_OVERLAPPED, NULL);
