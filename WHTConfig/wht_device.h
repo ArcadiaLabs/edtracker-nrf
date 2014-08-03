@@ -12,7 +12,7 @@ public:
 	bool Open();
 	void Close();
 	
-	bool GetFeatureReport(uint8_t* buffer, int report_size, uint8_t report_id);
-	bool SetFeatureReport(const uint8_t* buffer, int report_size, uint8_t report_id);
+	bool GetFeatureReport(uint8_t* buffer, int report_size);
+	bool SetFeatureReport(const uint8_t* buffer, int report_size);
 	bool GetInputReport(uint8_t* buffer, int report_size, uint8_t report_id);
 };

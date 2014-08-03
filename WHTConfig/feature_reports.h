@@ -1,29 +1,53 @@
 #pragma once
 
+#ifdef _MSC_VER
+# pragma pack(push)
+# pragma pack(1)
+#endif
+
 // this is the data we're sending back and forth between the WHT device and this program
 
-struct FeatureReport_Recenter
+#define AXIS_CONFIG_REPORT_ID			2
+
+// data direction: dongle <-> PC
+typedef struct
+{
+	uint8_t		report_id;		// == AXIS_CONFIG_REPORT_ID
+
+	uint8_t		is_autocenter;
+	uint8_t		is_linear;
+
+	// linear factors
+	float		lin_fact_x;
+	float		lin_fact_y;
+	float		lin_fact_z;
+
+	// exponential factors
+	float		exp_fact_x;
+	float		exp_fact_y;
+	float		exp_fact_z;
+	
+} FeatRep_AxisConfig;
+
+
+// direction: PC -> dongle
+typedef struct
 {
 	uint8_t		report_id;
 
-	uint8_t		recenter;		// non-zero if the dongle needs to recenter
-};
+	uint8_t		recenter;		// non-zero to recenter the dongle
+} FeatRep_Recenter;
 
-struct FeatureReport_Autocenter
-{
-	uint8_t		report_id;
-
-	uint8_t		autocenter;		// non-zero if auto-venter should be anbled
-};
-
-struct FeatureReport_Calibrate
+// direction: PC -> dongle
+typedef struct
 {
 	uint8_t		report_id;
 
 	uint8_t		calibrate;
-};
+} FeatRep_Calibrate;
 
-struct FeatureReport_CalibrationValues
+// direction: dongle -> PC
+typedef struct
 {
 	uint8_t		report_id;
 
@@ -36,25 +60,8 @@ struct FeatureReport_CalibrationValues
 	uint16_t	accel_x;
 	uint16_t	accel_y;
 	uint16_t	accel_z;
-};
+} FeatRep_CalibrationValues;
 
-struct FeatureReport_AxisMode
-{
-	uint8_t		report_id;
-
-	uint8_t		is_linear;
-
-	// Factors are divided by 10 on the dongle.
-	// So, a factor value of 144 is actually 14.4
-	// This is to save some bytes of bandwidth
-
-	// linear factors
-	uint8_t		lin_fact_x;
-	uint8_t		lin_fact_y;
-	uint8_t		lin_fact_z;
-
-	// exponential factors
-	uint8_t		lin_fact_x;
-	uint8_t		lin_fact_y;
-	uint8_t		lin_fact_z;
-};
+#ifdef _MSC_VER
+# pragma pack(pop)
+#endif

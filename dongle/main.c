@@ -16,6 +16,7 @@
 
 #include "nrfdbg.h"
 #include "proc_packet.h"
+#include "dongle_settings.h"
 
 void main(void)
 {
@@ -28,18 +29,18 @@ void main(void)
 	P0ALT = 0x00;	// all GPIO default behavior
 	P0 = 0;			// all low
 	
-	LED_off();
-	
-	usbInit();
-	dbgInit();
-
 	// timer init
 	T2CON =	0b10000001;		// start 1/24 timer
 	CCEN =	0b11000000;		// capture on write to CCL3
 	last_timer_capture = 0;
 	
-	dputs("\nhere!");
+	LED_off();
 	
+	dbgInit();
+	dputs("\nI live...");
+
+	usbInit();
+
 	rf_dngl_init();
 
 	reset_joystick_report();

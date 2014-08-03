@@ -138,11 +138,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="dllwrap.h" />
+    <ClInclude Include="feature_reports.h" />
     <ClInclude Include="hid.h" />
     <ClInclude Include="myutils.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="wht_device.h" />
+    <ClInclude Include="wht_dialog.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WHTConfig.rc" />
@@ -158,6 +160,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="wht_device.cpp" />
+    <ClCompile Include="wht_dialog.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="icons\icon.ico" />
