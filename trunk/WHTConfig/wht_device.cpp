@@ -5,7 +5,7 @@
 #include "myutils.h"
 
 #define VENDOR_ID	0x40AA
-#define PRODUCT_ID	0x9007
+#define PRODUCT_ID	0x9005
 
 WHTDevice::WHTDevice()
 	: hDevice(NULL)
@@ -105,33 +105,20 @@ void WHTDevice::Close()
 	hDevice = NULL;
 }
 
-bool WHTDevice::GetFeatureReport(uint8_t* buffer, int report_size, uint8_t report_id)
+bool WHTDevice::GetFeatureReport(uint8_t* buffer, int report_size)
 {
-	const int buff_size = report_size + 1;
-	std::auto_ptr<uint8_t> rcvBuff(new uint8_t[buff_size]);
-	rcvBuff.get()[0] = report_id;
-	if (HidD_GetFeature(hDevice, rcvBuff.get(), buff_size) == FALSE)
+	if (HidD_GetFeature(hDevice, buffer, report_size) == FALSE)
 	{
 		debug(GetLastError());
 		return false;
 	}
 
-	memcpy(buffer, rcvBuff.get() + 1, report_size);
-	
 	return true;
 }
 
-bool WHTDevice::SetFeatureReport(const uint8_t* buffer, int report_size, uint8_t report_id)
+bool WHTDevice::SetFeatureReport(const uint8_t* buffer, int report_size)
 {
-	// alloc the buffer
-	int buff_size = report_size + 1;
-	std::auto_ptr<uint8_t> sendBuff(new uint8_t[buff_size]);
-
-	// set the report ID and the data
-	sendBuff.get()[0] = report_id;
-	memcpy(sendBuff.get() + 1, buffer, report_size);
-		
-	return HidD_SetFeature(hDevice, sendBuff.get(), buff_size) == TRUE;
+	return HidD_SetFeature(hDevice, (PVOID) buffer, report_size) == TRUE;
 }
 
 bool WHTDevice::GetInputReport(uint8_t* buffer, int report_size, uint8_t report_id)

@@ -3,103 +3,20 @@
 #include "resource.h"
 #include "hid.h"
 #include "wht_device.h"
+#include "feature_reports.h"
 #include "myutils.h"
-
-WHTDevice dev;
-
-void InitDialog(HWND hDlg)
-{
-	// create the icon
-	HICON hIconBig = (HICON) LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON,
-						48, 48, LR_SHARED);
-
-	SendMessage(hDlg, WM_SETICON, ICON_BIG, (LPARAM) hIconBig);
-
-	HICON hIconSmall = (HICON) LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON,
-						16, 16, LR_SHARED);
-	SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM) hIconSmall);
-}
-
-BOOL CALLBACK MyDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	int ctrl_id;
-	//HWND hCtrl;
-
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		
-		InitDialog(hDlg);
-		return TRUE;
-
-	case WM_COMMAND:
-
-		ctrl_id = LOWORD(wParam);	// get the control ID
-		//hCtrl	= (HWND) lParam;
-
-		if (ctrl_id == IDC_BTN_CALIBRATE)
-			::MessageBox(hDlg, L"Calibrate", L"Title", MB_OK | MB_ICONINFORMATION);
-		else if (ctrl_id == IDC_BTN_SEND_TO_TRACKER) {
-			uint8_t buff[31];
-			memset(buff, 0, sizeof(buff));
-			dev.SetFeatureReport(buff, sizeof(buff), 2);
-		} else if (ctrl_id == IDC_BTN_CONNECT) {
-			if (!dev.Open())
-				::MessageBox(hDlg, L"Wireless head tracker dongle not found.", L"Error", MB_OK | MB_ICONERROR);
-
-			uint8_t buff[31];
-			memset(buff, 0, sizeof(buff));
-			dev.GetFeatureReport(buff, sizeof(buff), 2);
-
-		} else if (ctrl_id == IDC_BTN_DISCONNECT) {
-			dev.Close();
-		}
-
-		return FALSE;
-
-	case WM_CLOSE:
-
-		::EndDialog(hDlg, 0);
-		return TRUE;
-
-	case WM_DESTROY:
-		/*
-		{
-			// save the settings
-
-			// get the exe path
-			std::string ini_filename(GetIniFileName());
-
-			char buffer[MAX_PATH];
-
-			ComboBox_GetText(GetDlgItem(hDlg, IDC_MCU), buffer, MAX_PATH);
-			WritePrivateProfileString("Settings", "MCU", buffer, ini_filename.c_str());
-
-			LRESULT bytes = SendMessage(GetDlgItem(hDlg, IDC_HEX_FILE), WM_GETTEXT, MAX_PATH, (LPARAM) buffer);
-			WritePrivateProfileString("Settings", "HEXFile", buffer, ini_filename.c_str());
-
-			WritePrivateProfileString("Settings", "WaitForDevice", IsDlgButtonChecked(hDlg, IDC_WAIT_FOR_DEVICE) == BST_CHECKED ? "1" : "0", ini_filename.c_str());
-			WritePrivateProfileString("Settings", "RebootAfterProgramming", IsDlgButtonChecked(hDlg, IDC_REBOOT_AFTER_PROG) == BST_CHECKED ? "1" : "0", ini_filename.c_str());
-		}
-		*/
-
-		return FALSE;
-	}
-
-	return FALSE;
-}
+#include "wht_dialog.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
 	if (!InitHID())
 		return -1;
 
-	CoInitialize(0);		// GetOpenFileName needs this
+	CoInitialize(0);
 
 	InitCommonControls();	// for the progress bar
 
-	// start the dialog
-	/*INT_PTR result =*/ DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_MAIN_DIALOG), 0, (DLGPROC) MyDlgProc, 0);
+	DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_MAIN_DIALOG), 0, (DLGPROC) WHTDialog::MyDlgProc, 0);
 
 	CoUninitialize();
 

@@ -8,6 +8,7 @@
 #include "proc_packet.h"
 #include "mymath.h"
 #include "reports.h"
+#include "dongle_settings.h"
 
 // process_packet function processes the data from the sensor MPU-6050 attached to the player's head,
 // and calculated xyz coordinates from the received quaternions.
@@ -16,19 +17,9 @@
 // 
 // ED Tracker can be found here: http://edtracker.org.uk/
 
-#define SELF_CENTERING		// undefine to disable self centering
-#define EXP_SCALE_MODE		// exponential scale if define, liner otherwise
 #define CALC_DRIFT_COMP		// includes drift compensation if defined.
 							// currently drift compensation has no
 							// effect because xDriftComp is defined to 0
-
-#define xExpScale	11.0
-#define yExpScale	11.0
-#define zExpScale	11.0
-
-#define xScale		8.0
-#define yScale		8.0
-#define zScale		8.0
 
 int16_t driftSamples = -2;
 float lastX = 0, dX = 0, dY, dZ;
@@ -74,6 +65,8 @@ bool process_packet(mpu_packet_t* pckt)
 	float qww, qxx, qyy, qzz;
 	int32_t iX, iY, iZ;
 	
+	const dongle_settings_t __xdata * pSettings = get_settings();
+
 	qw = (float)(pckt->quat[0]) / 16384.0f;
 	qx = (float)(pckt->quat[1]) / 16384.0f;
 	qy = (float)(pckt->quat[2]) / 16384.0f;
@@ -150,15 +143,16 @@ bool process_packet(mpu_packet_t* pckt)
 
 	// printf_fast_f("%6.0f %6.0f %6.0f\n", newX, newY, newZ);
 	
-#ifdef EXP_SCALE_MODE
-	iX = (0.000122076 * newX * newX * xExpScale) * (newX / fabs(newX)); //side mount = yaw
-	iY = (0.000122076 * newY * newY * yExpScale) * (newY / fabs(newY)); //side mount = pitch
-	iZ = (0.000122076 * newZ * newZ * zExpScale) * (newZ / fabs(newZ)); //side mount = roll
-#else
-	iX = newX * xScale;
-	iY = newY * yScale;
-	iZ = newZ * zScale;
-#endif
+	if (pSettings->is_linear)
+	{
+		iX = newX * pSettings->lin_fact_x;
+		iY = newY * pSettings->lin_fact_y;
+		iZ = newZ * pSettings->lin_fact_z;
+	} else {
+		iX = (0.000122076 * newX * newX * pSettings->exp_fact_x) * (newX / fabs(newX)); //side mount = yaw
+		iY = (0.000122076 * newY * newY * pSettings->exp_fact_y) * (newY / fabs(newY)); //side mount = pitch
+		iZ = (0.000122076 * newZ * newZ * pSettings->exp_fact_z) * (newZ / fabs(newZ)); //side mount = roll
+	}
 
 	// clamp after scaling to keep values within 16 bit range
 	iX = constrain_16bit(iX);
@@ -170,32 +164,33 @@ bool process_packet(mpu_packet_t* pckt)
 	usb_joystick_report.y = iY;
 	usb_joystick_report.z = iZ;
 
-	//self centering
-	// if we're looking ahead, give or take
-	//  and not moving
-	//  and pitch is levelish then start to count
-#ifdef SELF_CENTERING
-	if (labs(iX) < 3000  &&  labs(iX - lX) < 5  &&  labs(iY) < 600)
+	// self centering
+	if (pSettings->is_selfcenter)
 	{
-		ticksInZone++;
-		dzX += iX;
-	} else {
-		ticksInZone = 0;
-		dzX = 0.0;
-	}
-	lX = iX;
+		// if we're looking ahead, give or take
+		//  and not moving
+		//  and pitch is levelish then start to count
+		if (labs(iX) < 3000  &&  labs(iX - lX) < 5  &&  labs(iY) < 600)
+		{
+			ticksInZone++;
+			dzX += iX;
+		} else {
+			ticksInZone = 0;
+			dzX = 0.0;
+		}
+		lX = iX;
 
-	// if we stayed looking ahead-ish long enough then adjust yaw offset
-	if (ticksInZone >= 10)
-	{
-		// NB this currently causes a small but visible jump in the
-		// view. Useful for debugging!
-		dzX = dzX * 0.1;
-		cx += dzX * 0.1;
-		ticksInZone = 0;
-		dzX = 0.0;
+		// if we stayed looking ahead-ish long enough then adjust yaw offset
+		if (ticksInZone >= 10)
+		{
+			// NB this currently causes a small but visible jump in the
+			// view. Useful for debugging!
+			dzX = dzX * 0.1;
+			cx += dzX * 0.1;
+			ticksInZone = 0;
+			dzX = 0.0;
+		}
 	}
-#endif	// SELF_CENTERING
 
 	// Apply X axis drift compensation every 5th packet
 	if (++pckt_cnt == 5)

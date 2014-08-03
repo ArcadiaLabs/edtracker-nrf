@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <stddef.h>
 
 #define DEFINE_USB_REGS
 
@@ -11,6 +12,8 @@
 #include "rf_protocol.h"
 #include "rf_dngl.h"
 #include "nrfdbg.h"
+#include "dongle_settings.h"
+#include "../WHTConfig/feature_reports.h"
 
 #include "usb.h"
 
@@ -23,7 +26,7 @@ usb_state_t	usb_state;
 
 uint8_t const __code * packetizer_data_ptr;
 uint8_t packetizer_data_size;
-__xdata uint8_t usb_feature_report[CTRL_REPORT_BYTES];
+__xdata uint8_t feature_report[MAX_FEATURE_REPORT_BYTES];
 
 // We are counting SOF packets as a timer for the HID idle rate.
 // usbframel & usbframeh are not good enough for this because of
@@ -56,22 +59,22 @@ void usbInit(void)
 
 	// setup the USB RAM
 	bout1addr = USB_EP0_SIZE/2;
-	bout2addr = bout1addr + USB_DEFAULT_EP_SIZE/2;
-	bout3addr = bout2addr + USB_DEFAULT_EP_SIZE/2;
-	bout4addr = bout3addr + USB_DEFAULT_EP_SIZE/2;
-	bout5addr = bout4addr + USB_DEFAULT_EP_SIZE/2;
+	bout2addr = USB_EP0_SIZE/2 + USB_DEFAULT_EP_SIZE/2;
+	bout3addr = USB_EP0_SIZE/2 + 2*USB_DEFAULT_EP_SIZE/2;
+	bout4addr = USB_EP0_SIZE/2 + 3*USB_DEFAULT_EP_SIZE/2;
+	bout5addr = USB_EP0_SIZE/2 + 4*USB_DEFAULT_EP_SIZE/2;
 
-	binstaddr = bout5addr/4;	// IN start address
+	binstaddr = 0xc0;	//bout5addr/4;	// IN start address
 
 	bin1addr = USB_EP0_SIZE/2;
-	bin2addr = bin1addr + USB_EP1_SIZE/2;
-	bin3addr = bin2addr + USB_DEFAULT_EP_SIZE/2;
-	bin4addr = bin3addr + USB_DEFAULT_EP_SIZE/2;
-	bin5addr = bin4addr + USB_DEFAULT_EP_SIZE/2;
+	bin2addr = USB_EP0_SIZE/2 + USB_EP1_SIZE/2;
+	bin3addr = USB_EP0_SIZE/2 + 2*USB_DEFAULT_EP_SIZE/2;
+	bin4addr = USB_EP0_SIZE/2 + 3*USB_DEFAULT_EP_SIZE/2;
+	bin5addr = USB_EP0_SIZE/2 + 4*USB_DEFAULT_EP_SIZE/2;
 
 	// enable endpoints
-	inbulkval = 0x03;	// enables IN endpoints on EP0 and EP1
-	outbulkval = 0x01;	// enables OUT endpoints on EP0
+	inbulkval = 0x03;	// enables IN endpoints EP0 and EP1
+	outbulkval = 0x01;	// enables OUT endpoint EP0
 	inisoval = 0x00;	// ISO not used
 	outisoval = 0x00;	// ISO not used
 }
@@ -282,15 +285,16 @@ void usbHidRequest(void)
 
 	if (bRequest == USB_REQ_HID_SET_REPORT)
 	{
-		// we have to wait for the data
-		dprintf("set id=%d type=%d\n", usbReqHidGetSetReport.reportID, usbReqHidGetSetReport.reportType);
+		// we have to wait for the actual data
+		dprintf("0x%02x\n", outbulkval);
 
 	} else if (bRequest == USB_REQ_HID_GET_REPORT) {
 
 		// this requests the HID report we defined with the HID report descriptor.
 		// this is usually sent over EP1 IN, but can be sent over EP0 too.
 
-		dprintf("get id=%d type=%d\n", usbReqHidGetSetReport.reportID, usbReqHidGetSetReport.reportType);
+		dputs("get");
+		//putchar('0' + usbReqHidGetSetReport.reportID);
 		
 		if (usbReqHidGetSetReport.reportID == JOYSTICK_REPORT_ID)
 		{
@@ -298,14 +302,22 @@ void usbHidRequest(void)
 		
 			// send the data on it's way
 			in0bc = sizeof(usb_joystick_report);
-		} else if (usbReqHidGetSetReport.reportID == CTRL_REPORT_ID) {
-			dputs("sad!");
-			memset(in0buf, 11, 32);
-		
-			in0buf[0] = CTRL_REPORT_ID;
+		} else if (usbReqHidGetSetReport.reportID == AXIS_CONFIG_REPORT_ID) {
+
+			// get the settings pointer
+			const dongle_settings_t __xdata * pSettings = get_settings();
+			
+			// this is very, very ugly but effective,
+			// though I'm sure it will come back and bite me in the ass
+			if (pSettings == 0)
+				memcpy(in0buf, &default_settings, sizeof(default_settings));
+			else
+				memcpy(in0buf, pSettings, sizeof(default_settings));
+
+			in0buf[0] = AXIS_CONFIG_REPORT_ID;
 			
 			// send the data on it's way
-			in0bc = 32;
+			in0bc = sizeof(FeatRep_AxisConfig);
 		}
 		
 	} else if (bRequest == USB_REQ_HID_GET_IDLE) {
@@ -364,22 +376,17 @@ void usbRequestDataReceived(void)
 {
 	if (usbRequest.bRequest == USB_REQ_HID_SET_REPORT)
 	{
-		// __xdata rf_msg_led_status_t msg;
-
-		// usb_led_report = out0buf[0];
-
-		// // swap the CAPS and SCROLL bits because the controller
-		// // has these the other way around than the report
-		// msg.msg_type = MT_LED_STATUS;
-		// msg.led_status = (usb_led_report & 1)
-		// 				| ((usb_led_report & 2) ? 4 : 0)
-		// 				| ((usb_led_report & 4) ? 2 : 0);
-
-		// // queue the status which will be sent with the next ACK payload
-		// rf_dngl_queue_ack_payload(&msg, sizeof msg);
+		if (usbReqHidGetSetReport.reportID == AXIS_CONFIG_REPORT_ID)
+		{
+			dongle_settings_t new_settings;
+			
+			memcpy(&new_settings, out0buf, MIN(sizeof(new_settings), usbReqHidGetSetReport.wLength));
+			new_settings.is_empty = 0x00;
+			save_settings(&new_settings);
+		}
 	}
 		
-	// send an empty packet and ACK the request
+	// send an empty packet to ACK the data
 	in0bc = 0x00;
 	USB_EP0_HSNAK();
 }
@@ -435,6 +442,7 @@ void usbPoll(void)
 
 	case INT_EP1IN:
 		in_irq = 0x02;	// clear interrupt flag
+		out0bc = USB_EP0_SIZE;
 		break;
 	/*
 	case INT_EP2IN:
