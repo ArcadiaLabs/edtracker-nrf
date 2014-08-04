@@ -5,7 +5,7 @@
 // non-volatile section of the nRF24LE1
 typedef struct
 {
-	uint8_t		valid;		// 0x00 if valid, 0xff if invalid
+	uint8_t		is_empty;		// 0xff if empty, 0x00 if used
 	int16_t		gyro_bias[3];
 	int16_t		accel_bias[3];
 } settings_t;

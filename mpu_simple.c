@@ -12,6 +12,7 @@
 #include "mpu_defines.h"
 #include "mpu_dmp_firmware.h"
 #include "rf_protocol.h"
+#include "settings.h"
 #include "nrfdbg.h"
 
 bool mpu_write_byte(uint8_t reg_addr, uint8_t val)
@@ -26,8 +27,6 @@ uint8_t mpu_read_byte(uint8_t reg_addr, uint8_t* val)
 	result = i2c_read(reg_addr, 1, val);
 	return result ? 0 : 0xff;
 }*/
-
-int16_t fBias[3];
 
 bool mpu_write_mem(uint16_t mem_addr, uint16_t length, const uint8_t* data2write)
 {
@@ -133,7 +132,7 @@ void reset_fifo(void)
 	mpu_write_byte(FIFO_EN, 0x78);		// enable gyro and accel FIFO
 }
 
-void mpu_set_gyro_bias_reg(int16_t* gyro_bias)
+void mpu_set_gyro_bias(const int16_t* gyro_bias)
 {
 	uint8_t d[2], i;
 
@@ -156,34 +155,20 @@ void mpu_read_accel_bias(int16_t* accel_bias)
 	}
 }
 
-void mpu_set_accel_bias_reg(const int16_t* accel_bias, const uint8_t relative)
+void mpu_set_accel_bias(const int16_t* accel_bias)
 {
-	uint8_t d[2];
-	int16_t accel_reg_bias[3];
-	uint8_t mask_bit;
+	uint16_t swp;
 	uint8_t i;
-
-	mpu_read_accel_bias(accel_reg_bias);
 
 	// bit 0 of the 2 byte bias is for temp comp
 	// calculations need to compensate for this and not change it
 	for (i = 0; i < 3; i++)
 	{
-		if (accel_reg_bias[i] & 1)
-			mask_bit = 0x01;
-		else
-			mask_bit = 0x00;
-			
-		if (relative)
-			accel_reg_bias[i] -= accel_bias[i];
-		else	// just dump the value in
-			accel_reg_bias[i] = accel_bias[i];
-
-		d[0] = (accel_reg_bias[i] >> 8) & 0xff;
-		d[1] = (accel_reg_bias[i]) & 0xfe;
-		d[1] = d[1] | mask_bit;
-
-		i2c_write(0x06 + i * 2, 2, d);
+		// SDCC recognizes byte swapping (SDCC manual 8.1.10)
+		swp = accel_bias[i];
+		swp = ((swp << 8) | (swp >> 8));
+		
+		i2c_write(0x06 + i * 2, 2, (uint8_t*) &swp);
 	}
 }
 
@@ -367,14 +352,20 @@ bool dmp_read_fifo(mpu_packet_t* pckt, uint8_t* more)
 
 void load_biases(void)
 {
-	int16_t gBias[3] = { -8,  -71,  65};
-	int16_t aBias[3] = {257,   96, -39};
+	const settings_t* pSettings = get_settings();
 
-	// load the factory bias in case we need it for bias calibration
-	mpu_read_accel_bias(fBias);
-	
-	mpu_set_gyro_bias_reg(gBias);
-	mpu_set_accel_bias_reg(aBias, 1);
+	if (pSettings)
+	{
+		dprintf("%s\ngyro %d %d %d\naccel %d %d %d\n",
+						"loading",
+						pSettings->gyro_bias[0], pSettings->gyro_bias[1], pSettings->gyro_bias[2],
+						pSettings->accel_bias[0], pSettings->accel_bias[1], pSettings->accel_bias[2]);
+						
+		mpu_set_gyro_bias(pSettings->gyro_bias);
+		mpu_set_accel_bias(pSettings->accel_bias);
+	} else {
+		dputs("no settings saved");
+	}
 }
 
 void dmp_init(bool send_cal_gyro)
@@ -445,102 +436,104 @@ void mpu_init(bool send_cal_gyro)
 	dmp_init(send_cal_gyro);
 }
 
-void msg(char* m, int16_t* v)
-{
-#ifdef DBG_MODE
-	printf("%s %i   %i   %i\n", m, v[0], v[1], v[2]);
-#else
-	m, v;
-#endif
-}
-
-void calibrate_bias(void)
+void mpu_calibrate_bias(void)
 {
 	uint8_t more;
-	uint16_t s16cnt;
+	uint8_t scnt;
 	int8_t accel_step = 50;
 	mpu_packet_t pckt;
-	int16_t gBias[3], aBias[3];
+	settings_t new_settings;
 
-	mpu_init(false);
+	LED_YELLOW = 1;
 	
-	dputs("calibrating");
+	dputs("**************** calibrating");
 	
-	msg("factory accel ", fBias);
+	mpu_init(true);
 	
-	gBias[0] = 0;
-	gBias[1] = 0;
-	gBias[2] = 0;
+	memset(&new_settings, 0, sizeof(new_settings));
 	
-	aBias[0] = 0;
-	aBias[1] = 0;
-	aBias[2] = 0;
+	// read the current accel bias
+	mpu_read_accel_bias(new_settings.accel_bias);
 
-	// set gyro to zero and accel to factory bias
-	mpu_set_gyro_bias_reg(gBias);
+	// set default gyro bias
+	mpu_set_gyro_bias(new_settings.gyro_bias);
+	
+	dprintf("%s\ngyro %d %d %d\naccel %d %d %d\n",
+					"old",
+					new_settings.gyro_bias[0], new_settings.gyro_bias[1], new_settings.gyro_bias[2],
+					new_settings.accel_bias[0], new_settings.accel_bias[1], new_settings.accel_bias[2]);
+	
+	// delay_ms(100);
 
-	delay_ms(100);
-
-	for (s16cnt = 0; s16cnt < 200; s16cnt++)
+	for (scnt = 0; scnt < 200; scnt++)
 	{
 		while (MPU_IRQ == 1)
 			dbgPoll();
 		while (MPU_IRQ == 0)
 			;
 		
-		if (s16cnt == 50)
+		if (scnt == 50)
 			accel_step = 10;
-		else if (s16cnt == 100)
-			accel_step = 1;
+		else if (scnt == 100)
+			accel_step = 2;
 		
 		do {
 			dmp_read_fifo(&pckt, &more);
 		} while (more);
 
+		if (dbgEmpty())
+			dprintf("g %d %d %d  a %d %d %d\n",
+						pckt.gyro[0], pckt.gyro[1], pckt.gyro[2],
+						pckt.accel[0], pckt.accel[1], pckt.accel[2]);
+			
+		// accel
 		if (pckt.accel[0] >= 1)
-			aBias[0] += accel_step;
+			new_settings.accel_bias[0] += accel_step;
 		else if (pckt.accel[0] <= -1)
-			aBias[0] -= accel_step;
+			new_settings.accel_bias[0] -= accel_step;
 
 		if (pckt.accel[1] >= 1)
-			aBias[1] += accel_step;
+			new_settings.accel_bias[1] += accel_step;
 		else if (pckt.accel[1] <= -1)
-			aBias[1] -= accel_step;
+			new_settings.accel_bias[1] -= accel_step;
 
 		if (pckt.accel[2] > 16384)
-			aBias[2] += accel_step;
+			new_settings.accel_bias[2] += accel_step;
 		else if (pckt.accel[2] < 16384)
-			aBias[2] -= accel_step;
+			new_settings.accel_bias[2] -= accel_step;
 
+		// gyro
 		if (pckt.gyro[0] > 1)
-			gBias[0]--;
+			new_settings.gyro_bias[0]--;
 		else if (pckt.gyro[0] < -1)
-			gBias[0]++;
+			new_settings.gyro_bias[0]++;
 
 		if (pckt.gyro[1] > 1)
-			gBias[1]--;
+			new_settings.gyro_bias[1]--;
 		else if (pckt.gyro[1] < -1)
-			gBias[1]++;
+			new_settings.gyro_bias[1]++;
 
 		if (pckt.gyro[2] > 1)
-			gBias[2]--;
+			new_settings.gyro_bias[2]--;
 		else if (pckt.gyro[2] < -1)
-			gBias[2]++;
+			new_settings.gyro_bias[2]++;
 
-		//if (dbgEmpty())
-		//{
-		//	msg("g ", gBias);
-		//	msg("a ", aBias);
-		//}
-
-		// push the factory bias back
-		mpu_set_accel_bias_reg(fBias, 0);
-		mpu_set_gyro_bias_reg(gBias);
-		mpu_set_accel_bias_reg(aBias, 1);
+		// push the biases to the MPU
+		//mpu_set_gyro_bias(new_settings.gyro_bias);
+		//mpu_set_accel_bias(new_settings.accel_bias);
 	}
 
-	msg("g ", gBias);
-	msg("a ", aBias);
+	// now save our settings
+	save_settings(&new_settings);
+	
+	dprintf("%s\ngyro %d %d %d\naccel %d %d %d\n",
+					"new",
+					new_settings.gyro_bias[0], new_settings.gyro_bias[1], new_settings.gyro_bias[2],
+					new_settings.accel_bias[0], new_settings.accel_bias[1], new_settings.accel_bias[2]);
 
 	dbgFlush();
+	
+	mpu_init(false);
+
+	LED_YELLOW = 0;
 }

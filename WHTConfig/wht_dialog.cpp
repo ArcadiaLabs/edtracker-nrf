@@ -102,8 +102,14 @@ WHTDialog::~WHTDialog()
 void WHTDialog::OnCommand(int ctrl_id)
 {
 	if (ctrl_id == IDC_BTN_CALIBRATE)
-		MessageBox(hDialog, L"Calibrate", L"Title", MB_OK | MB_ICONINFORMATION);
-	else if (ctrl_id == IDC_BTN_SEND_TO_TRACKER) {
+	{
+		FeatRep_Calibrate rep;
+		rep.report_id = CALIBRATE_REPORT_ID;
+		rep.calibrate = CALIBRATE_REPORT_ID;	// this is a dummy
+		if (!device.SetFeatureReport((uint8_t*) &rep, sizeof(rep)))
+			MessageBox(hDialog, L"Unable to send data to dongle.", L"Error", MB_OK | MB_ICONERROR);
+
+	} else if (ctrl_id == IDC_BTN_SEND_TO_TRACKER) {
 		SendConfigToDevice();
 	} else if (ctrl_id == IDC_BTN_CONNECT) {
 		if (!device.Open())

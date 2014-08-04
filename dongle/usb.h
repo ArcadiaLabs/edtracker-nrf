@@ -208,11 +208,9 @@ typedef struct
 } usb_conf_desc_joystick_t;
 
 #define JOYSTICK_HID_REPORT_DESC_SIZE	74
-#define JOYSTICK_REPORT_ID		1
+#define JOYSTICK_REPORT_ID				1
 
 #define USB_STRING_DESC_COUNT			4
-
-#define MAX_FEATURE_REPORT_BYTES		32
 
 extern __code const usb_conf_desc_joystick_t usb_conf_desc;
 extern __code const usb_dev_desc_t usb_dev_desc;
@@ -222,7 +220,10 @@ extern __code const uint16_t usb_string_desc_2[];
 extern __code const uint16_t usb_string_desc_3[];
 extern __code const uint8_t joystick_hid_report_descriptor[JOYSTICK_HID_REPORT_DESC_SIZE];
 
-extern __xdata uint8_t feature_report[MAX_FEATURE_REPORT_BYTES];
+#define MAX_FEATURE_REPORT_BYTES		32
+
+extern bool new_report;
+extern uint8_t feature_report[MAX_FEATURE_REPORT_BYTES];
 
 void usbInit(void);
 void usbPoll(void);

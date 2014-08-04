@@ -26,7 +26,8 @@ usb_state_t	usb_state;
 
 uint8_t const __code * packetizer_data_ptr;
 uint8_t packetizer_data_size;
-__xdata uint8_t feature_report[MAX_FEATURE_REPORT_BYTES];
+bool new_report;
+uint8_t feature_report[MAX_FEATURE_REPORT_BYTES];
 
 // We are counting SOF packets as a timer for the HID idle rate.
 // usbframel & usbframeh are not good enough for this because of
@@ -285,8 +286,7 @@ void usbHidRequest(void)
 
 	if (bRequest == USB_REQ_HID_SET_REPORT)
 	{
-		// we have to wait for the actual data
-		dprintf("0x%02x\n", outbulkval);
+		// we get and process the actual data in usbRequestDataReceived()
 
 	} else if (bRequest == USB_REQ_HID_GET_REPORT) {
 
@@ -376,14 +376,8 @@ void usbRequestDataReceived(void)
 {
 	if (usbRequest.bRequest == USB_REQ_HID_SET_REPORT)
 	{
-		if (usbReqHidGetSetReport.reportID == AXIS_CONFIG_REPORT_ID)
-		{
-			dongle_settings_t new_settings;
-			
-			memcpy(&new_settings, out0buf, MIN(sizeof(new_settings), usbReqHidGetSetReport.wLength));
-			new_settings.is_empty = 0x00;
-			save_settings(&new_settings);
-		}
+		memcpy(&feature_report, out0buf, MIN(sizeof(feature_report), usbReqHidGetSetReport.wLength));
+		new_report = true;
 	}
 		
 	// send an empty packet to ACK the data
