@@ -6,6 +6,8 @@
 #include "wht_device.h"
 #include "wht_dialog.h"
 
+#define WM_TRAYNOTIFY		(WM_APP+1)
+
 BOOL CALLBACK WHTDialog::MyDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	WHTDialog* pDlg = reinterpret_cast<WHTDialog*> (GetWindowLong(hDlg, GWL_USERDATA));
@@ -24,9 +26,33 @@ BOOL CALLBACK WHTDialog::MyDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARA
 
 		return FALSE;
 
+	case WM_TIMER:
+
+		if (pDlg)
+			pDlg->OnTimer();
+
+		return TRUE;
+
+	case WM_SYSCOMMAND:
+
+		if (pDlg  &&  wParam == SC_MINIMIZE)
+		{
+			pDlg->OnMinimize();
+			return TRUE;
+		}
+
+		return FALSE;
+
+	case WM_TRAYNOTIFY:
+
+		if (pDlg)
+			pDlg->OnTrayNotify(lParam);
+
+		return TRUE;
+
 	case WM_CLOSE:
 
-		::EndDialog(hDlg, 0);
+		EndDialog(hDlg, 0);
 		return TRUE;
 
 	case WM_DESTROY:
@@ -46,15 +72,24 @@ WHTDialog::WHTDialog(HWND hDlg)
 	// first save the dialog pointer to user data
 	SetWindowLong(hDialog, GWL_USERDATA, reinterpret_cast<LONG>(this));
 
-	// create the icon
-	HICON hIconBig = (HICON) LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON,
+	// create the icons
+	hIconBig = (HICON) LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON,
 						48, 48, LR_SHARED);
 
 	SendMessage(hDialog, WM_SETICON, ICON_BIG, (LPARAM) hIconBig);
 
-	HICON hIconSmall = (HICON) LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON,
+	hIconSmall = (HICON) LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON,
 						16, 16, LR_SHARED);
 	SendMessage(hDialog, WM_SETICON, ICON_SMALL, (LPARAM) hIconSmall);
+
+	DisconnectedUI();
+
+	// start the timer
+	SetTimer(hDialog, 1, 1000, NULL);
+
+	InitStatusbar();
+
+	// SendMessage(this->get_hwnd(), SB_SETTEXT, part, (LPARAM) text.c_str());
 }
 
 WHTDialog::~WHTDialog()
@@ -63,21 +98,96 @@ WHTDialog::~WHTDialog()
 	SetWindowLong(hDialog, GWL_USERDATA, 0);
 }
 
+
 void WHTDialog::OnCommand(int ctrl_id)
 {
 	if (ctrl_id == IDC_BTN_CALIBRATE)
-		::MessageBox(hDialog, L"Calibrate", L"Title", MB_OK | MB_ICONINFORMATION);
+		MessageBox(hDialog, L"Calibrate", L"Title", MB_OK | MB_ICONINFORMATION);
 	else if (ctrl_id == IDC_BTN_SEND_TO_TRACKER) {
 		SendConfigToDevice();
 	} else if (ctrl_id == IDC_BTN_CONNECT) {
 		if (!device.Open())
-			::MessageBox(hDialog, L"Wireless head tracker dongle not found.", L"Error", MB_OK | MB_ICONERROR);
-
-		ReadConfigFromDevice();
+		{
+			MessageBox(hDialog, L"Wireless head tracker dongle not found.", L"Error", MB_OK | MB_ICONERROR);
+		} else {
+			ConnectedUI();
+			ReadConfigFromDevice();
+		}
 
 	} else if (ctrl_id == IDC_BTN_DISCONNECT) {
 		device.Close();
 	}
+}
+
+void WHTDialog::OnTimer()
+{
+	SetStatusbarText(0, int2str(GetTickCount()));
+}
+
+void WHTDialog::OnMinimize()
+{
+	CreateTrayIcon();
+	Hide();
+}
+
+void WHTDialog::OnTrayNotify(LPARAM lParam)
+{
+	if (lParam == WM_LBUTTONDOWN)
+	{
+		Show();
+		RemoveTrayIcon();
+	}
+}
+
+void WHTDialog::InitStatusbar()
+{
+	// make the status bar parts
+	const int NUM_PARTS = 5;
+	int parts[NUM_PARTS];
+	parts[0] = 80;
+	parts[1] = 160;
+	parts[2] = 240;
+	parts[3] = 320;
+	parts[4] = -1;
+
+	SendMessage(GetDlgItem(hDialog, IDC_STATUS_BAR), SB_SETPARTS, NUM_PARTS, (LPARAM) parts);
+}
+
+void WHTDialog::SetStatusbarText(int part, const std::wstring& text)
+{
+	SendMessage(GetDlgItem(hDialog, IDC_STATUS_BAR), SB_SETTEXT, part, (LPARAM) text.c_str());
+}
+
+void WHTDialog::CreateTrayIcon()
+{
+	NOTIFYICONDATA nid;
+ 
+	nid.cbSize = sizeof(NOTIFYICONDATA);
+	nid.hWnd = hDialog;
+	nid.uID = 100;
+	nid.uVersion = NOTIFYICON_VERSION;
+	nid.uCallbackMessage = WM_TRAYNOTIFY;
+	nid.hIcon = hIconSmall;
+	wcscpy_s(nid.szTip, L"Wireless Head Tracker");
+	nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+ 
+	Shell_NotifyIcon(NIM_ADD, &nid);
+}
+
+void WHTDialog::RemoveTrayIcon()
+{
+	NOTIFYICONDATA nid;
+ 
+	nid.cbSize = sizeof(NOTIFYICONDATA);
+	nid.hWnd = hDialog;
+	nid.uID = 100;
+	nid.uVersion = NOTIFYICON_VERSION;
+	nid.uCallbackMessage = WM_TRAYNOTIFY;
+	nid.hIcon = hIconSmall;
+	wcscpy_s(nid.szTip, L"Wireless Head Tracker");
+	nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+ 
+	Shell_NotifyIcon(NIM_DELETE, &nid);
 }
 
 void WHTDialog::SetCtrlText(int ctrl_id, const std::wstring& text)
@@ -105,12 +215,16 @@ void WHTDialog::ReadConfigFromDevice()
 
 	FeatRep_AxisConfig rep;
 	rep.report_id = AXIS_CONFIG_REPORT_ID;
-	device.GetFeatureReport((uint8_t*) &rep, sizeof(rep));
+	if (!device.GetFeatureReport((uint8_t*) &rep, sizeof(rep)))
+	{
+		MessageBox(hDialog, L"Unable to read from dongle.\n", L"Error", MB_OK | MB_ICONERROR);
+		return;
+	}
 
 	SetRadioState(IDC_RDB_LINEAR, rep.is_linear != 0);
 	SetRadioState(IDC_RDB_EXPONENTIAL, rep.is_linear == 0);
 
-	SetCheckState(IDC_CHK_AUTOCENTER, rep.is_autocenter != 0);
+	SetCheckState(IDC_CHK_SELFCENTER, rep.is_selfcenter != 0);
 
 	SetCtrlText(IDC_EDT_LIN_FACT_X, int2flt(rep.lin_fact_x));
 	SetCtrlText(IDC_EDT_LIN_FACT_Y, int2flt(rep.lin_fact_y));
@@ -128,7 +242,7 @@ void WHTDialog::SendConfigToDevice()
 	FeatRep_AxisConfig rep;
 
 	rep.is_linear = GetRadioState(IDC_RDB_LINEAR) ? 1 : 0;
-	rep.is_autocenter = GetCheckState(IDC_CHK_AUTOCENTER) ? 1 : 0;
+	rep.is_selfcenter = GetCheckState(IDC_CHK_SELFCENTER) ? 1 : 0;
 
 	rep.lin_fact_x = GetCtrlTextFloat(IDC_EDT_LIN_FACT_X);
 	rep.lin_fact_y = GetCtrlTextFloat(IDC_EDT_LIN_FACT_Y);
@@ -140,13 +254,41 @@ void WHTDialog::SendConfigToDevice()
 
 	rep.report_id = AXIS_CONFIG_REPORT_ID;
 	if (!device.SetFeatureReport((uint8_t*) &rep, sizeof(rep)))
-		::MessageBox(hDialog, L"Not sent!", L"Error", MB_OK | MB_ICONERROR);
+		MessageBox(hDialog, L"Not sent!", L"Error", MB_OK | MB_ICONERROR);
 }
 
 void WHTDialog::ConnectedUI()
 {
+    EnableWindow(GetDlgItem(hDialog, IDC_BTN_CONNECT), FALSE);
+    EnableWindow(GetDlgItem(hDialog, IDC_BTN_DISCONNECT), TRUE);
+
+	EnableWindow(GetDlgItem(hDialog, IDC_BTN_CALIBRATE), TRUE);
+	EnableWindow(GetDlgItem(hDialog, IDC_BTN_SEND_TO_TRACKER), TRUE);
+	EnableWindow(GetDlgItem(hDialog, IDC_RDB_LINEAR), TRUE);
+    EnableWindow(GetDlgItem(hDialog, IDC_RDB_EXPONENTIAL), TRUE);
+	EnableWindow(GetDlgItem(hDialog, IDC_CHK_SELFCENTER), TRUE);
+	EnableWindow(GetDlgItem(hDialog, IDC_EDT_LIN_FACT_X), TRUE);
+	EnableWindow(GetDlgItem(hDialog, IDC_EDT_LIN_FACT_Y), TRUE);
+	EnableWindow(GetDlgItem(hDialog, IDC_EDT_LIN_FACT_Z), TRUE);
+	EnableWindow(GetDlgItem(hDialog, IDC_EDT_EXP_FACT_X), TRUE);
+	EnableWindow(GetDlgItem(hDialog, IDC_EDT_EXP_FACT_Y), TRUE);
+	EnableWindow(GetDlgItem(hDialog, IDC_EDT_EXP_FACT_Z), TRUE);
 }
 
 void WHTDialog::DisconnectedUI()
 {
+    EnableWindow(GetDlgItem(hDialog, IDC_BTN_CONNECT), TRUE);
+    EnableWindow(GetDlgItem(hDialog, IDC_BTN_DISCONNECT), FALSE);
+
+	EnableWindow(GetDlgItem(hDialog, IDC_BTN_CALIBRATE), FALSE);
+	EnableWindow(GetDlgItem(hDialog, IDC_BTN_SEND_TO_TRACKER), FALSE);
+	EnableWindow(GetDlgItem(hDialog, IDC_RDB_LINEAR), FALSE);
+    EnableWindow(GetDlgItem(hDialog, IDC_RDB_EXPONENTIAL), FALSE);
+	EnableWindow(GetDlgItem(hDialog, IDC_CHK_SELFCENTER), FALSE);
+	EnableWindow(GetDlgItem(hDialog, IDC_EDT_LIN_FACT_X), FALSE);
+	EnableWindow(GetDlgItem(hDialog, IDC_EDT_LIN_FACT_Y), FALSE);
+	EnableWindow(GetDlgItem(hDialog, IDC_EDT_LIN_FACT_Z), FALSE);
+	EnableWindow(GetDlgItem(hDialog, IDC_EDT_EXP_FACT_X), FALSE);
+	EnableWindow(GetDlgItem(hDialog, IDC_EDT_EXP_FACT_Y), FALSE);
+	EnableWindow(GetDlgItem(hDialog, IDC_EDT_EXP_FACT_Z), FALSE);
 }
