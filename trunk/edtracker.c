@@ -104,8 +104,9 @@ void test_bias(void)
 
 int main(void)
 {
-	uint8_t more;
+	uint8_t more, ack;
 	uint8_t rf_pckt_ok = 0, rf_pckt_lost = 0;
+	
 	bool read_result;
 	mpu_packet_t pckt;
 
@@ -114,7 +115,8 @@ int main(void)
 	for (;;)
 	{
 		// wait for the interrupt
-		while (MPU_IRQ);
+		while (MPU_IRQ)
+			dbgPoll();
 		while (!MPU_IRQ);
 			
 		do {
@@ -127,6 +129,7 @@ int main(void)
 			{
 				pckt.flags = (RECENTER_BTN == 0 ? FLAG_RECENTER : 0);
 				
+				// send the message
 				if (rf_head_send_message(&pckt, sizeof(pckt)))
 					++rf_pckt_ok;
 				else
@@ -145,6 +148,13 @@ int main(void)
 					LED_GREEN = 0;
 
 					rf_pckt_ok = rf_pckt_lost = 0;
+				}
+
+				// check for an ACK payload
+				if (rf_head_read_ack_payload(&ack, 1))
+				{
+					if (ack == CMD_CALIBRATE)
+						mpu_calibrate_bias();
 				}
 			}
 			

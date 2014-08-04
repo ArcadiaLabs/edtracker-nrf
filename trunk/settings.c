@@ -87,11 +87,11 @@ int8_t get_current_settings_ndx(void)
 	uint8_t cnt;
 	
 	// if no settings have been saved yet
-	if (pStart->valid == 0xff)
+	if (pStart->is_empty == 0xff)
 		return -1;
 
-	// find the last valid settings block (with valid == 0x00) in the page
-	for (cnt = 0; cnt < BLOCKS_CAPACITY - 1  &&  pStart[cnt + 1].valid != 0xff; ++cnt)
+	// find the last valid settings block (with is_empty == 0x00) in the page
+	for (cnt = 0; cnt < BLOCKS_CAPACITY - 1  &&  pStart[cnt + 1].is_empty != 0xff; ++cnt)
 		;
 
 	return cnt;
@@ -123,7 +123,7 @@ void save_settings(settings_t* pNewSettings)
 		new_ndx = 0;
 	}
 	
-	pNewSettings->valid = 0x00;
+	pNewSettings->is_empty = 0x00;
 	
 	// save the value
 	WEN = 1;

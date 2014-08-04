@@ -7,6 +7,10 @@
 
 // this is the data we're sending back and forth between the WHT device and this program
 
+// *****************************************************************
+// *****************************************************************
+// *****************************************************************
+
 #define AXIS_CONFIG_REPORT_ID			2
 
 // data direction: dongle <-> PC
@@ -29,14 +33,11 @@ typedef struct
 	
 } FeatRep_AxisConfig;
 
+// *****************************************************************
+// *****************************************************************
+// *****************************************************************
 
-// direction: PC -> dongle
-typedef struct
-{
-	uint8_t		report_id;
-
-	uint8_t		recenter;		// non-zero to recenter the dongle
-} FeatRep_Recenter;
+#define CALIBRATE_REPORT_ID			3
 
 // direction: PC -> dongle
 typedef struct
@@ -45,6 +46,18 @@ typedef struct
 
 	uint8_t		calibrate;
 } FeatRep_Calibrate;
+
+// *****************************************************************
+// *****************************************************************
+// *****************************************************************
+
+// direction: PC -> dongle
+typedef struct
+{
+	uint8_t		report_id;
+
+	uint8_t		recenter;		// non-zero to recenter the dongle
+} FeatRep_Recenter;
 
 // direction: dongle -> PC
 typedef struct

@@ -96,14 +96,15 @@ uint8_t rf_head_read_ack_payload(void* buff, const uint8_t buff_size)
 		ack_bytes = nRF_data[1];
 
 		// the max ACK payload size has to be 2
-		if (ack_bytes <= 2)
+		if (ack_bytes <= buff_size)
 		{
 			// read the entire payload
 			nRF_ReadRxPayload(ack_bytes);
 
 			// copy up to buff_size bytes
-			ret_val = ack_bytes < buff_size ? ack_bytes : buff_size;
-			memcpy(buff, nRF_data + 1, ret_val);
+			memcpy(buff, nRF_data + 1, ack_bytes);
+			
+			ret_val = ack_bytes;
 		} else {
 			nRF_FlushRX();
 		}

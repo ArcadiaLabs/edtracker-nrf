@@ -6,6 +6,8 @@
 #include "reg24lu1.h"
 
 #include "reports.h"
+#include "../WHTConfig/feature_reports.h"
+
 #include "rf_protocol.h"
 #include "rf_dngl.h"
 #include "nrfutils.h"
@@ -17,6 +19,23 @@
 #include "nrfdbg.h"
 #include "proc_packet.h"
 #include "dongle_settings.h"
+
+void handle_incomming_report(void)
+{
+	if (feature_report[0] == AXIS_CONFIG_REPORT_ID)
+	{
+		// save the data structure
+		save_settings((dongle_settings_t*) feature_report);
+
+	} else if (feature_report[0] == CALIBRATE_REPORT_ID) {
+	
+		// tell the head tracker to recalibrate
+		uint8_t ack_payload = CMD_CALIBRATE;
+		rf_dngl_queue_ack_payload(&ack_payload, 1);
+	}
+
+	new_report = false;
+}
 
 void main(void)
 {
@@ -63,6 +82,10 @@ void main(void)
 			total_packets[total_packets_ndx] = 0;
 		}
 		last_timer_capture = CCH3;
+
+		// handle incoming feature reports
+		if (new_report)
+			handle_incomming_report();
 		
 		// reset the timer
 		// try to read the recv buffer, then process the received data
