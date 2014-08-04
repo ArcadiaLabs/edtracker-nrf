@@ -23,8 +23,8 @@ void main(void)
 	bool joystick_report_ready = false;
 	__xdata mpu_packet_t packet;
 	uint8_t last_timer_capture;
-	uint8_t packet_cnt = 0, last_total_packets = 0;
-
+	uint8_t total_packets[10], total_packets_ndx;		// last 1 second of packets
+	
 	P0DIR = 0x00;	// all outputs
 	P0ALT = 0x00;	// all GPIO default behavior
 	P0 = 0;			// all low
@@ -33,6 +33,9 @@ void main(void)
 	T2CON =	0b10000001;		// start 1/24 timer
 	CCEN =	0b11000000;		// capture on write to CCL3
 	last_timer_capture = 0;
+	
+	memset(total_packets, 0, sizeof(total_packets));
+	total_packets_ndx = 0;
 	
 	LED_off();
 	
@@ -53,8 +56,11 @@ void main(void)
 		CCL3 = 1;	// capture CCH3
 		if (last_timer_capture > CCH3)
 		{
-			last_total_packets = packet_cnt;
-			packet_cnt = 0;
+			total_packets_ndx++;
+			if (total_packets_ndx == sizeof(total_packets))
+				total_packets_ndx = 0;
+				
+			total_packets[total_packets_ndx] = 0;
 		}
 		last_timer_capture = CCH3;
 		
@@ -64,7 +70,7 @@ void main(void)
 		{
 			joystick_report_ready |= process_packet(&packet);
 
-			packet_cnt++;
+			total_packets[total_packets_ndx]++;
 		}
 
 		// send the report if the endpoint is not busy

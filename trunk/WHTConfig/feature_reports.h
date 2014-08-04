@@ -14,7 +14,7 @@ typedef struct
 {
 	uint8_t		report_id;		// == AXIS_CONFIG_REPORT_ID
 
-	uint8_t		is_autocenter;
+	uint8_t		is_selfcenter;
 	uint8_t		is_linear;
 
 	// linear factors

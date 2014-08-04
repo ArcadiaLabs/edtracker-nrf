@@ -4,10 +4,15 @@ class WHTDialog
 {
 private:
 	HWND		hDialog;
+	HICON		hIconSmall;
+	HICON		hIconBig;
 	WHTDevice	device;
 
 	void ReadConfigFromDevice();
 	void SendConfigToDevice();
+
+	void InitStatusbar();
+	void SetStatusbarText(int part, const std::wstring& text);
 
 	void SetCtrlText(int ctrl_id, const std::wstring& text);
 	void SetCtrlTextFloat(int ctrl_id, float flt)
@@ -33,10 +38,26 @@ private:
 		return IsDlgButtonChecked(hDialog, ctrl_id) == BST_CHECKED;
 	}
 
+	void CreateTrayIcon();
+	void RemoveTrayIcon();
+
 	void OnCommand(int ctrl_id);
+	void OnTimer();
+	void OnTrayNotify(LPARAM lParam);
+	void OnMinimize();
 
 	void ConnectedUI();
 	void DisconnectedUI();
+
+	void Hide()
+	{
+		ShowWindow(hDialog, SW_HIDE);
+	}
+
+	void Show()
+	{
+		ShowWindow(hDialog, SW_SHOW);
+	}
 
 public:
 	explicit WHTDialog(HWND hDlg);
