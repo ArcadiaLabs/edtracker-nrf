@@ -304,15 +304,11 @@ void usbHidRequest(void)
 			in0bc = sizeof(usb_joystick_report);
 		} else if (usbReqHidGetSetReport.reportID == AXIS_CONFIG_REPORT_ID) {
 
-			// get the settings pointer
-			const dongle_settings_t __xdata * pSettings = get_settings();
-			
-			// this is very, very ugly but effective,
-			// though I'm sure it will come back and bite me in the ass
-			if (pSettings == 0)
-				memcpy(in0buf, &default_settings, sizeof(default_settings));
-			else
-				memcpy(in0buf, pSettings, sizeof(default_settings));
+			// at the moment dongle_settings_t and FeatRep_AxisConfig fields
+			// have the same members, so we're abusing this fact.
+			// I'm sure it will come back and bite me in the ass,
+			// but I'll leave it as is for now
+			memcpy(in0buf, get_settings(), sizeof(dongle_settings_t));
 
 			in0buf[0] = AXIS_CONFIG_REPORT_ID;
 			
