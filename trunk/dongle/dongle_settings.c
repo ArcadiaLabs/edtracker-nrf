@@ -39,7 +39,7 @@ void list_settings(void)
 }
 */
 
-extern __code dongle_settings_t default_settings =
+__xdata dongle_settings_t default_settings =
 {
 	0,		// is_empty
 	
@@ -87,7 +87,7 @@ void flash_bytes_write(uint16_t a, uint8_t __xdata * p, uint16_t n)
     {
         *pb++ = *p++;
 
-        // Wait for the write operation to finish:
+        // wait for the write operation to finish
         while (RDYN == 1)
             ;
     }
@@ -96,7 +96,7 @@ void flash_bytes_write(uint16_t a, uint8_t __xdata * p, uint16_t n)
     CKCON = 0x02;
 }
 
-int8_t get_current_settings_ndx(void)
+int8_t get_ndx_of_current_settings(void)
 {
 	const dongle_settings_t __xdata * pStart = DATA0_ADDR;
 	uint8_t cnt;
@@ -115,20 +115,27 @@ int8_t get_current_settings_ndx(void)
 const dongle_settings_t __xdata * get_settings(void)
 {
 	const dongle_settings_t __xdata * pStart = DATA0_ADDR;
-	int8_t ndx = get_current_settings_ndx();
+	int8_t ndx;
+
+	ndx = get_ndx_of_current_settings();
 	
+	// no settings yet, so make a default one
 	if (ndx == -1)
-		return 0;
+	{
+		save_settings(&default_settings);
+		ndx = 0;
+	}
 		
 	return pStart + ndx;
 }
 
-void save_settings(dongle_settings_t* pNewSettings)
+void save_settings(const dongle_settings_t __xdata * pNewSettings)
 {
-	const dongle_settings_t __xdata * pStart = DATA0_ADDR;
-	int8_t new_ndx = get_current_settings_ndx() + 1;
+	// get the next empty slot
+	dongle_settings_t save_img;
+	int8_t new_ndx = get_ndx_of_current_settings() + 1;
 
-	// if the two pages are full
+	// if all slots are full
 	if (new_ndx == BLOCKS_CAPACITY)
 	{
 		// erase the two pages and start from the beginning
@@ -138,8 +145,10 @@ void save_settings(dongle_settings_t* pNewSettings)
 		new_ndx = 0;
 	}
 	
-	pNewSettings->is_empty = 0x00;
+	memcpy(&save_img, pNewSettings, sizeof(save_img));
+	
+	save_img.is_empty = 0x00;
 	
 	// save the new settings
-	flash_bytes_write((uint16_t)(pStart + new_ndx), (uint8_t __xdata *) pNewSettings, sizeof(dongle_settings_t));
+	flash_bytes_write((uint16_t)(DATA0_ADDR + new_ndx), (uint8_t __xdata *) &save_img, sizeof(save_img));
 }

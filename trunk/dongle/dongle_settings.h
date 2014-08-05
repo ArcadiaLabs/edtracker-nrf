@@ -22,10 +22,8 @@ typedef struct
 
 } dongle_settings_t;
 
-extern __code dongle_settings_t default_settings;
-
 const dongle_settings_t __xdata * get_settings(void);
-void save_settings(dongle_settings_t* pNewSettings);
+void save_settings(const dongle_settings_t __xdata * pNewSettings);
 
 // these are for testing
 //void list_settings(void);

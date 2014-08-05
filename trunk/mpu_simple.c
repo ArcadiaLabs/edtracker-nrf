@@ -157,18 +157,22 @@ void mpu_read_accel_bias(int16_t* accel_bias)
 
 void mpu_set_accel_bias(const int16_t* accel_bias)
 {
-	uint16_t swp;
+	//uint16_t swp;
 	uint8_t i;
+	uint8_t data[2];
 
 	// bit 0 of the 2 byte bias is for temp comp
 	// calculations need to compensate for this and not change it
 	for (i = 0; i < 3; i++)
 	{
 		// SDCC recognizes byte swapping (SDCC manual 8.1.10)
-		swp = accel_bias[i];
-		swp = ((swp << 8) | (swp >> 8));
+		//swp = accel_bias[i];
+		//swp = ((swp << 8) | (swp >> 8));
 		
-		i2c_write(0x06 + i * 2, 2, (uint8_t*) &swp);
+		data[0] = (accel_bias[i] >> 8) & 0xff;
+		data[1] = (accel_bias[i]) & 0xff;
+		
+		i2c_write(0x06 + i * 2, 2, data);
 	}
 }
 
@@ -440,7 +444,7 @@ void mpu_calibrate_bias(void)
 {
 	uint8_t more;
 	uint8_t scnt;
-	int8_t accel_step = 50;
+	int8_t accel_step = 10;
 	mpu_packet_t pckt;
 	settings_t new_settings;
 
@@ -463,8 +467,6 @@ void mpu_calibrate_bias(void)
 					new_settings.gyro_bias[0], new_settings.gyro_bias[1], new_settings.gyro_bias[2],
 					new_settings.accel_bias[0], new_settings.accel_bias[1], new_settings.accel_bias[2]);
 	
-	// delay_ms(100);
-
 	for (scnt = 0; scnt < 200; scnt++)
 	{
 		while (MPU_IRQ == 1)
@@ -472,9 +474,7 @@ void mpu_calibrate_bias(void)
 		while (MPU_IRQ == 0)
 			;
 		
-		if (scnt == 50)
-			accel_step = 10;
-		else if (scnt == 100)
+		if (scnt == 100)
 			accel_step = 2;
 		
 		do {
@@ -488,19 +488,19 @@ void mpu_calibrate_bias(void)
 			
 		// accel
 		if (pckt.accel[0] >= 1)
-			new_settings.accel_bias[0] += accel_step;
-		else if (pckt.accel[0] <= -1)
 			new_settings.accel_bias[0] -= accel_step;
+		else if (pckt.accel[0] <= -1)
+			new_settings.accel_bias[0] += accel_step;
 
 		if (pckt.accel[1] >= 1)
-			new_settings.accel_bias[1] += accel_step;
-		else if (pckt.accel[1] <= -1)
 			new_settings.accel_bias[1] -= accel_step;
+		else if (pckt.accel[1] <= -1)
+			new_settings.accel_bias[1] += accel_step;
 
 		if (pckt.accel[2] > 16384)
-			new_settings.accel_bias[2] += accel_step;
-		else if (pckt.accel[2] < 16384)
 			new_settings.accel_bias[2] -= accel_step;
+		else if (pckt.accel[2] < 16384)
+			new_settings.accel_bias[2] += accel_step;
 
 		// gyro
 		if (pckt.gyro[0] > 1)
@@ -519,8 +519,10 @@ void mpu_calibrate_bias(void)
 			new_settings.gyro_bias[2]++;
 
 		// push the biases to the MPU
-		//mpu_set_gyro_bias(new_settings.gyro_bias);
-		//mpu_set_accel_bias(new_settings.accel_bias);
+		mpu_set_gyro_bias(new_settings.gyro_bias);
+		mpu_set_accel_bias(new_settings.accel_bias);
+		
+		delay_ms(100);
 	}
 
 	// now save our settings

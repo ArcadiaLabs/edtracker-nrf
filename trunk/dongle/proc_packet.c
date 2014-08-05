@@ -66,7 +66,7 @@ bool process_packet(mpu_packet_t* pckt)
 	int32_t iX, iY, iZ;
 	
 	const dongle_settings_t __xdata * pSettings = get_settings();
-
+	
 	qw = (float)(pckt->quat[0]) / 16384.0f;
 	qx = (float)(pckt->quat[1]) / 16384.0f;
 	qy = (float)(pckt->quat[2]) / 16384.0f;

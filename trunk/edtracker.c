@@ -104,7 +104,7 @@ void test_bias(void)
 
 int main(void)
 {
-	uint8_t more, ack;
+	uint8_t more, ack, pckt_cnt = 0;
 	uint8_t rf_pckt_ok = 0, rf_pckt_lost = 0;
 	
 	bool read_result;
@@ -124,6 +124,15 @@ int main(void)
 			do {
 				read_result = dmp_read_fifo(&pckt, &more);
 			} while (more);
+			
+			if (++pckt_cnt == 20  &&  dbgEmpty())
+			{
+				dprintf("g %d %d %d  a %d %d %d\n",
+							pckt.gyro[0], pckt.gyro[1], pckt.gyro[2],
+							pckt.accel[0], pckt.accel[1], pckt.accel[2]);
+
+				pckt_cnt = 0;
+			}
 			
 			if (read_result)
 			{

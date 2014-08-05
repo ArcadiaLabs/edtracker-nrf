@@ -8,41 +8,12 @@
 #include "nRF24L.h"
 #include "hw_defs.h"
 
-#define NRF_CHECK_MODULE
-
 void rf_dngl_init(void)
 {
 	nRF_Init();
 
 	// set the addresses
 	nRF_WriteAddrReg(RX_ADDR_P0, DongleAddr, NRF_ADDR_SIZE);
-
-#if defined(NRF_CHECK_MODULE) && defined(AVR)
-
-	nRF_data[1] = 0;
-	nRF_data[2] = 0;
-	nRF_data[3] = 0;
-	nRF_data[4] = 0;
-	nRF_data[5] = 0;
-
-	nRF_ReadAddrReg(RX_ADDR_P0, 5);	// read the address back
-	
-	// compare
-	if (memcmp(nRF_data + 1, &DongleAddr, NRF_ADDR_SIZE) != 0)
-	{
-		//printf("buff=%02x %02x %02x %02x %02x\n", buff[0], buff[1], buff[2], buff[3], buff[4]);
-		//printf("nRF_=%02x %02x %02x %02x %02x\n", nRF_data[1], nRF_data[2], nRF_data[3], nRF_data[4], nRF_data[5]);
-
-		// toggle the LED forever
-		for (;;)
-		{
-			TogBit(PORT(LED1_PORT), LED1_BIT);
-
-			_delay_ms(300);
-		}
-	}
-
-#endif	// NRF_CHECK_MODULE
 
 	nRF_WriteReg(EN_AA, vENAA_P0);			// enable auto acknowledge
 	nRF_WriteReg(SETUP_RETR, vARD_250us);	// ARD=250us, ARC=disabled
@@ -75,8 +46,6 @@ uint8_t rf_dngl_recv(void __xdata * buff, uint8_t buff_size)
 	nRF_ReadReg(FIFO_STATUS);
 	if ((nRF_data[1] & vRX_EMPTY) == 0)
 	{
-		LED_on();
-		
 		// read the payload
 		nRF_ReadRxPayloadWidth();
 		ret_val = nRF_data[1];
@@ -94,8 +63,6 @@ uint8_t rf_dngl_recv(void __xdata * buff, uint8_t buff_size)
 		// reset the TX_DS
 		if (nRF_data[0] & vTX_DS)
 			nRF_WriteReg(STATUS, vTX_DS);
-
-		LED_off();
 	}
 	
 	return ret_val;

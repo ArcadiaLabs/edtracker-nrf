@@ -94,6 +94,10 @@ void main(void)
 			joystick_report_ready |= process_packet(&packet);
 
 			total_packets[total_packets_ndx]++;
+			
+			LED_on();
+		} else {
+			LED_off();
 		}
 
 		// send the report if the endpoint is not busy
