@@ -4,7 +4,7 @@
 #include <compiler_mcs51.h>
 
 #include "usb.h"
-#include "../WHTConfig/feature_reports.h"
+#include "reports.h"
 
 __code const usb_dev_desc_t usb_dev_desc =
 {
@@ -91,29 +91,39 @@ __code const uint8_t joystick_hid_report_descriptor[JOYSTICK_HID_REPORT_DESC_SIZ
 
 	// our feature reports - these read and write configuration information
 	
-	0x06, 0x00, 0xFF,						//     Usage Page (Vendor Usage 0xFF00)
-	0x09, 0x01,								//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x01)
-	0x85, AXIS_CONFIG_REPORT_ID,			//     Report ID
-	0x15, 0x00,								//     Logical Minimum (0)
-	0x26, 0xFF, 0x00,						//     Logical Maximum (255)
-	0x75, 0x08,								//     Report Size (8)
-	0x95, sizeof(FeatRep_AxisConfig)-1,		//     Report Count (number of bytes not including the reportID)
-	0x09, 0x00,								//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x00)
-	0xB2, 0x02, 0x01,						//     Feature (Data,Variable,Absolute,No wrap,Linear,Preferred State,No Null position,Non Volatile,Buffered Bytes)
+	0x06, 0x00, 0xFF,							//     Usage Page (Vendor Usage 0xFF00)
+	0x09, 0x01,									//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x01)
+	0x85, AXIS_CONFIG_REPORT_ID,				//     Report ID
+	0x15, 0x00,									//     Logical Minimum (0)
+	0x26, 0xFF, 0x00,							//     Logical Maximum (255)
+	0x75, 0x08,									//     Report Size (8)
+	0x95, sizeof(FeatRep_AxisConfig)-1,			//     Report Count (number of bytes not including the reportID)
+	0x09, 0x00,									//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x00)
+	0xB2, 0x02, 0x01,							//     Feature (Data,Variable,Absolute,No wrap,Linear,Preferred State,No Null position,Non Volatile,Buffered Bytes)
 
-	0x06, 0x00, 0xFF,						//     Usage Page (Vendor Usage 0xFF00)
-	0x09, 0x01,								//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x01)
-	0x85, CALIBRATE_REPORT_ID,				//     Report ID
-	0x15, 0x00,								//     Logical Minimum (0)
-	0x26, 0xFF, 0x00,						//     Logical Maximum (255)
-	0x75, 0x08,								//     Report Size (8)
-	0x95, sizeof(FeatRep_Calibrate)-1,		//     Report Count (number of bytes not including the reportID)
-	0x09, 0x00,								//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x00)
-	0xB2, 0x02, 0x01,						//     Feature (Data,Variable,Absolute,No wrap,Linear,Preferred State,No Null position,Non Volatile,Buffered Bytes)
-	
+	0x06, 0x00, 0xFF,							//     Usage Page (Vendor Usage 0xFF00)
+	0x09, 0x01,									//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x01)
+	0x85, COMMAND_REPORT_ID,					//     Report ID
+	0x15, 0x00,									//     Logical Minimum (0)
+	0x26, 0xFF, 0x00,							//     Logical Maximum (255)
+	0x75, 0x08,									//     Report Size (8)
+	0x95, sizeof(FeatRep_Command)-1,			//     Report Count (number of bytes not including the reportID)
+	0x09, 0x00,									//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x00)
+	0xB2, 0x02, 0x01,							//     Feature (Data,Variable,Absolute,No wrap,Linear,Preferred State,No Null position,Non Volatile,Buffered Bytes)
+
+	0x06, 0x00, 0xFF,							//     Usage Page (Vendor Usage 0xFF00)
+	0x09, 0x01,									//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x01)
+	0x85, CALIBRATION_DATA_REPORT_ID,			//     Report ID
+	0x15, 0x00,									//     Logical Minimum (0)
+	0x26, 0xFF, 0x00,							//     Logical Maximum (255)
+	0x75, 0x08,									//     Report Size (8)
+	0x95, sizeof(FeatRep_CalibrationData)-1,	//     Report Count (number of bytes not including the reportID)
+	0x09, 0x00,									//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x00)
+	0xB2, 0x02, 0x01,							//     Feature (Data,Variable,Absolute,No wrap,Linear,Preferred State,No Null position,Non Volatile,Buffered Bytes)
+
 	0xC0,						// End Collection
 
-// 74 bytes
+// 95 bytes
 
 };
 

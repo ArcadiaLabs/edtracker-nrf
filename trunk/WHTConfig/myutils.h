@@ -1,7 +1,7 @@
 #pragma once
 
-std::wstring int2str(const int u);
-std::wstring int2flt(const float f);
+std::wstring int2str(const int i);
+std::wstring flt2str(const float f);
 
 inline void debug(const wchar_t* str)
 {

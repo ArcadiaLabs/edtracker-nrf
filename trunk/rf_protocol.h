@@ -30,12 +30,4 @@ typedef struct
 	int16_t		accel_bias[3];
 } calib_data_t;
 
-// these are command sent from the USB dongle to the head tracker using ACK payloads
-
-enum head_tracker_commands_t
-{
-	CMD_CALIBRATE			= 1,
-	CMD_SEND_CALIB_DATA		= 2,
-};
-
 #endif		// RF_PROTOCOL_H

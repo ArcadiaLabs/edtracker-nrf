@@ -17,10 +17,6 @@
 // 
 // ED Tracker can be found here: http://edtracker.org.uk/
 
-#define CALC_DRIFT_COMP		// includes drift compensation if defined.
-							// currently drift compensation has no
-							// effect because xDriftComp is defined to 0
-
 int16_t driftSamples = -2;
 float lastX = 0, dX = 0, dY, dZ;
 float lX = 0.0;
@@ -31,6 +27,8 @@ float cx, cy, cz = 0.0;
 bool calibrated = false;
 int16_t sampleCount = 0;
 uint8_t pckt_cnt = 0;
+
+#define CALC_DRIFT_COMP
 
 #ifdef CALC_DRIFT_COMP
 float xDriftComp = 0.0;
@@ -192,7 +190,8 @@ bool process_packet(mpu_packet_t* pckt)
 		}
 	}
 
-	// Apply X axis drift compensation every 5th packet
+#ifdef CALC_DRIFT_COMP
+	// Apply X axis drift compensation
 	if (++pckt_cnt == 5)
 	{
 		cx = cx + xDriftComp;	// depending on your mounting
@@ -210,6 +209,7 @@ bool process_packet(mpu_packet_t* pckt)
 			dX += newX - lastX;
 		lastX = newX;
 	}
+#endif
 
 	return true;
 }

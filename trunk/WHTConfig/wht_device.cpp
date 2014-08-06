@@ -121,7 +121,7 @@ bool WHTDevice::SetFeatureReport(const uint8_t* buffer, int report_size)
 	return HidD_SetFeature(hDevice, (PVOID) buffer, report_size) == TRUE;
 }
 
-bool WHTDevice::GetInputReport(uint8_t* buffer, int report_size, uint8_t report_id)
+bool WHTDevice::GetInputReport(uint8_t* buffer, int report_size)
 {
-	return false;
+	return HidD_GetInputReport(hDevice, (PVOID) buffer, report_size) == TRUE;
 }

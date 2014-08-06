@@ -9,6 +9,7 @@ private:
 	WHTDevice	device;
 
 	void ReadConfigFromDevice();
+	void ReadCalibrationData();
 	void SendConfigToDevice();
 
 	void InitStatusbar();
@@ -17,7 +18,12 @@ private:
 	void SetCtrlText(int ctrl_id, const std::wstring& text);
 	void SetCtrlTextFloat(int ctrl_id, float flt)
 	{
-		SetCtrlText(ctrl_id, int2flt(flt));
+		SetCtrlText(ctrl_id, flt2str(flt));
+	}
+
+	void ClearCtrlText(int ctrl_id)
+	{
+		SetCtrlText(ctrl_id, L"");
 	}
 
 	float GetCtrlTextFloat(int ctrl_id);
