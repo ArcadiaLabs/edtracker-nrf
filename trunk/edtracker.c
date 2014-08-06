@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 #include <math.h>
 
 #include <compiler_mcs51.h>
@@ -90,7 +91,7 @@ void test_bias(void)
 		
 		if (cnt == 200)
 		{
-			printf("%li   %li   %li\n", a[0] / cnt, a[1] / cnt, a[2] / cnt - 16384);
+			dprintf("%li   %li   %li\n", a[0] / cnt, a[1] / cnt, a[2] / cnt - 16384);
 			cnt = 0;
 		} else {
 			++cnt;
@@ -109,6 +110,7 @@ int main(void)
 	
 	bool read_result;
 	mpu_packet_t pckt;
+	calib_data_t calib;
 
 	hw_init();
 	
@@ -163,7 +165,28 @@ int main(void)
 				if (rf_head_read_ack_payload(&ack, 1))
 				{
 					if (ack == CMD_CALIBRATE)
+					{
 						mpu_calibrate_bias();
+					} else if (ack == CMD_SEND_CALIB_DATA) {
+					
+						const settings_t __xdata * pSettings = get_settings();
+
+						memset(&calib, 0, sizeof(calib));
+						
+						calib.is_calibrated = (pSettings == 0);
+						if (calib.is_calibrated)
+						{
+							calib.gyro_bias[0] = pSettings->gyro_bias[0];
+							calib.gyro_bias[1] = pSettings->gyro_bias[1];
+							calib.gyro_bias[2] = pSettings->gyro_bias[2];
+							
+							calib.accel_bias[0] = pSettings->accel_bias[0];
+							calib.accel_bias[1] = pSettings->accel_bias[1];
+							calib.accel_bias[2] = pSettings->accel_bias[2];
+						}
+						
+						rf_head_send_message(&calib, sizeof(calib));
+					}
 				}
 			}
 			
