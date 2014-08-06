@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 #include "resource.h"
-#include "feature_reports.h"
+#include "../dongle/reports.h"
 #include "myutils.h"
 #include "wht_device.h"
 #include "wht_dialog.h"
@@ -84,8 +84,12 @@ WHTDialog::WHTDialog(HWND hDlg)
 
 	DisconnectedUI();
 
+	SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_X), PBM_SETRANGE, 0, MAKELPARAM(0, 0xffff));
+	SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_Y), PBM_SETRANGE, 0, MAKELPARAM(0, 0xffff));
+	SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_Z), PBM_SETRANGE, 0, MAKELPARAM(0, 0xffff));
+
 	// start the timer
-	SetTimer(hDialog, 1, 1000, NULL);
+	SetTimer(hDialog, 1, 100, NULL);
 
 	InitStatusbar();
 
@@ -98,14 +102,13 @@ WHTDialog::~WHTDialog()
 	SetWindowLong(hDialog, GWL_USERDATA, 0);
 }
 
-
 void WHTDialog::OnCommand(int ctrl_id)
 {
 	if (ctrl_id == IDC_BTN_CALIBRATE)
 	{
-		FeatRep_Calibrate rep;
-		rep.report_id = CALIBRATE_REPORT_ID;
-		rep.calibrate = CALIBRATE_REPORT_ID;	// this is a dummy
+		FeatRep_Command rep;
+		rep.report_id = COMMAND_REPORT_ID;
+		rep.command = CMD_CALIBRATE;
 		if (!device.SetFeatureReport((uint8_t*) &rep, sizeof(rep)))
 			MessageBox(hDialog, L"Unable to send data to dongle.", L"Error", MB_OK | MB_ICONERROR);
 
@@ -118,16 +121,26 @@ void WHTDialog::OnCommand(int ctrl_id)
 		} else {
 			ConnectedUI();
 			ReadConfigFromDevice();
+			ReadCalibrationData();
 		}
 
 	} else if (ctrl_id == IDC_BTN_DISCONNECT) {
 		device.Close();
+		DisconnectedUI();
 	}
 }
 
 void WHTDialog::OnTimer()
 {
-	SetStatusbarText(0, int2str(GetTickCount()));
+	// SetStatusbarText(0, int2str(GetTickCount()));
+	hid_joystick_report_t rep;
+	rep.report_id = JOYSTICK_REPORT_ID;
+	if (device.GetInputReport((uint8_t*) &rep, sizeof(rep)))
+	{
+		SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_X), PBM_SETPOS, (WPARAM) rep.x + 32768, 0);
+		SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_Y), PBM_SETPOS, (WPARAM) rep.y + 32768, 0);
+		SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_Z), PBM_SETPOS, (WPARAM) rep.z + 32768, 0);
+	}
 }
 
 void WHTDialog::OnMinimize()
@@ -232,13 +245,49 @@ void WHTDialog::ReadConfigFromDevice()
 
 	SetCheckState(IDC_CHK_SELFCENTER, rep.is_selfcenter != 0);
 
-	SetCtrlText(IDC_EDT_LIN_FACT_X, int2flt(rep.lin_fact_x));
-	SetCtrlText(IDC_EDT_LIN_FACT_Y, int2flt(rep.lin_fact_y));
-	SetCtrlText(IDC_EDT_LIN_FACT_Z, int2flt(rep.lin_fact_z));
+	SetCtrlText(IDC_EDT_LIN_FACT_X, flt2str(rep.lin_fact_x));
+	SetCtrlText(IDC_EDT_LIN_FACT_Y, flt2str(rep.lin_fact_y));
+	SetCtrlText(IDC_EDT_LIN_FACT_Z, flt2str(rep.lin_fact_z));
 
-	SetCtrlText(IDC_EDT_EXP_FACT_X, int2flt(rep.exp_fact_x));
-	SetCtrlText(IDC_EDT_EXP_FACT_Y, int2flt(rep.exp_fact_y));
-	SetCtrlText(IDC_EDT_EXP_FACT_Z, int2flt(rep.exp_fact_z));
+	SetCtrlText(IDC_EDT_EXP_FACT_X, flt2str(rep.exp_fact_x));
+	SetCtrlText(IDC_EDT_EXP_FACT_Y, flt2str(rep.exp_fact_y));
+	SetCtrlText(IDC_EDT_EXP_FACT_Z, flt2str(rep.exp_fact_z));
+}
+
+void WHTDialog::ReadCalibrationData()
+{
+	debug(L"reading FeatRep_CalibrationData");
+
+	ClearCtrlText(IDC_CALIB_STATUS);
+	ClearCtrlText(IDC_GYRO_BIAS_X);
+	ClearCtrlText(IDC_GYRO_BIAS_Y);
+	ClearCtrlText(IDC_GYRO_BIAS_Z);
+	ClearCtrlText(IDC_ACCEL_BIAS_X);
+	ClearCtrlText(IDC_ACCEL_BIAS_Y);
+	ClearCtrlText(IDC_ACCEL_BIAS_Z);
+
+	FeatRep_CalibrationData rep;
+	rep.report_id = CALIBRATION_DATA_REPORT_ID;
+	if (!device.GetFeatureReport((uint8_t*) &rep, sizeof(rep)))
+	{
+		MessageBox(hDialog, L"Unable to read calibration data.\n", L"Error", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	if (rep.has_tracker_responded == 0)
+	{
+		SetCtrlText(IDC_CALIB_STATUS, L"Tracker not found");
+	} else {
+		SetCtrlText(IDC_CALIB_STATUS, rep.is_calibrated ? L"Calibrated" : L"Not calibrated");
+
+		SetCtrlText(IDC_GYRO_BIAS_X, int2str(rep.gyro_bias[0]));
+		SetCtrlText(IDC_GYRO_BIAS_Y, int2str(rep.gyro_bias[1]));
+		SetCtrlText(IDC_GYRO_BIAS_Z, int2str(rep.gyro_bias[2]));
+
+		SetCtrlText(IDC_ACCEL_BIAS_X, int2str(rep.accel_bias[0]));
+		SetCtrlText(IDC_ACCEL_BIAS_Y, int2str(rep.accel_bias[1]));
+		SetCtrlText(IDC_ACCEL_BIAS_Z, int2str(rep.accel_bias[2]));
+	}
 }
 
 void WHTDialog::SendConfigToDevice()

@@ -452,7 +452,7 @@ void mpu_calibrate_bias(void)
 	
 	dputs("**************** calibrating");
 	
-	mpu_init(true);
+	mpu_init(false);
 	
 	memset(&new_settings, 0, sizeof(new_settings));
 	
@@ -467,14 +467,14 @@ void mpu_calibrate_bias(void)
 					new_settings.gyro_bias[0], new_settings.gyro_bias[1], new_settings.gyro_bias[2],
 					new_settings.accel_bias[0], new_settings.accel_bias[1], new_settings.accel_bias[2]);
 	
-	for (scnt = 0; scnt < 200; scnt++)
+	for (scnt = 0; scnt < 100; scnt++)
 	{
 		while (MPU_IRQ == 1)
 			dbgPoll();
 		while (MPU_IRQ == 0)
 			;
 		
-		if (scnt == 100)
+		if (scnt == 40)
 			accel_step = 2;
 		
 		do {
@@ -482,7 +482,7 @@ void mpu_calibrate_bias(void)
 		} while (more);
 
 		if (dbgEmpty())
-			dprintf("g %d %d %d  a %d %d %d\n",
+			dprintf("g %6d %6d %6d  a %6d %6d %6d\n",
 						pckt.gyro[0], pckt.gyro[1], pckt.gyro[2],
 						pckt.accel[0], pckt.accel[1], pckt.accel[2]);
 			
@@ -521,14 +521,12 @@ void mpu_calibrate_bias(void)
 		// push the biases to the MPU
 		mpu_set_gyro_bias(new_settings.gyro_bias);
 		mpu_set_accel_bias(new_settings.accel_bias);
-		
-		delay_ms(100);
 	}
 
 	// now save our settings
 	save_settings(&new_settings);
 	
-	dprintf("%s\ngyro %d %d %d\naccel %d %d %d\n",
+	dprintf("%s\ngyro %6d %6d %6d\naccel %6d %6d %6d\n",
 					"new",
 					new_settings.gyro_bias[0], new_settings.gyro_bias[1], new_settings.gyro_bias[2],
 					new_settings.accel_bias[0], new_settings.accel_bias[1], new_settings.accel_bias[2]);

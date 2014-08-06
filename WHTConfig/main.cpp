@@ -3,7 +3,6 @@
 #include "resource.h"
 #include "hid.h"
 #include "wht_device.h"
-#include "feature_reports.h"
 #include "myutils.h"
 #include "wht_dialog.h"
 

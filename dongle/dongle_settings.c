@@ -28,6 +28,7 @@ void list_settings(void)
 	dputs("------------");
 	for (cnt = 0; cnt < BLOCKS_CAPACITY; ++cnt)
 	{
+		// define PRINTF as printf_fast_f in the makefile
 		dprintf("%d %d %d %f %f %f %f %f %f\n",
 				cnt,
 				pStart[cnt].is_selfcenter, pStart[cnt].is_linear,
@@ -50,9 +51,9 @@ __xdata dongle_settings_t default_settings =
 	8.0,	// lin_fact_y
 	8.0,	// lin_fact_z
 
-	11.0,	// exp_fact_x
-	11.0,	// exp_fact_y
-	11.0,	// exp_fact_z
+	12.0,	// exp_fact_x
+	12.0,	// exp_fact_y
+	12.0,	// exp_fact_z
 };
 
 void flash_page_erase(uint8_t pn)

@@ -1,6 +1,6 @@
 TARGET    = eddngl
 CFLAGS    = --model-large -I.. -I../mcu-lib -DNRF24LU1
-#CFLAGS   += -DDBG_MODE=0 -DPRINTF=printf_tiny
+#CFLAGS   += -DDBG_MODE=1 -DPRINTF=printf_tiny
 LFLAGS    = --code-loc 0x0000 --code-size 0x8000 --xram-loc 0x8000 --xram-size 0x800
 ASFLAGS   = -plosgff
 RELFILES  = main.rel proc_packet.rel usb_desc.rel mymath.rel rf_dngl.rel usb.rel reports.rel dongle_settings.rel

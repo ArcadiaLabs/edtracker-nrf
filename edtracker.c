@@ -12,6 +12,7 @@
 
 #include "i2c.h"
 #include "rf_protocol.h"
+#include "../dongle/reports.h"
 #include "mpu_simple.h"
 #include "mpu_regs.h"
 #include "sleeping.h"
@@ -129,7 +130,7 @@ int main(void)
 			
 			if (++pckt_cnt == 20  &&  dbgEmpty())
 			{
-				dprintf("g %d %d %d  a %d %d %d\n",
+				dprintf("g %4d %4d %4d  a %6d %6d %6d\n",
 							pckt.gyro[0], pckt.gyro[1], pckt.gyro[2],
 							pckt.accel[0], pckt.accel[1], pckt.accel[2]);
 
@@ -173,7 +174,7 @@ int main(void)
 
 						memset(&calib, 0, sizeof(calib));
 						
-						calib.is_calibrated = (pSettings == 0);
+						calib.is_calibrated = (pSettings != 0);
 						if (calib.is_calibrated)
 						{
 							calib.gyro_bias[0] = pSettings->gyro_bias[0];
