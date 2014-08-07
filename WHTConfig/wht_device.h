@@ -11,6 +11,11 @@ public:
 
 	bool Open();
 	void Close();
+
+	bool IsOpen() const
+	{
+		return hDevice != NULL;
+	}
 	
 	bool GetFeatureReport(uint8_t* buffer, int report_size);
 	bool SetFeatureReport(const uint8_t* buffer, int report_size);

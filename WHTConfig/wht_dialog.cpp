@@ -132,14 +132,17 @@ void WHTDialog::OnCommand(int ctrl_id)
 
 void WHTDialog::OnTimer()
 {
-	// SetStatusbarText(0, int2str(GetTickCount()));
-	hid_joystick_report_t rep;
-	rep.report_id = JOYSTICK_REPORT_ID;
-	if (device.GetInputReport((uint8_t*) &rep, sizeof(rep)))
+	if (device.IsOpen())
 	{
-		SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_X), PBM_SETPOS, (WPARAM) rep.x + 32768, 0);
-		SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_Y), PBM_SETPOS, (WPARAM) rep.y + 32768, 0);
-		SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_Z), PBM_SETPOS, (WPARAM) rep.z + 32768, 0);
+		// SetStatusbarText(0, int2str(GetTickCount()));
+		hid_joystick_report_t rep;
+		rep.report_id = JOYSTICK_REPORT_ID;
+		if (device.GetInputReport((uint8_t*) &rep, sizeof(rep)))
+		{
+			SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_X), PBM_SETPOS, (WPARAM) rep.x + 32768, 0);
+			SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_Y), PBM_SETPOS, (WPARAM) rep.y + 32768, 0);
+			SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_Z), PBM_SETPOS, (WPARAM) rep.z + 32768, 0);
+		}
 	}
 }
 
