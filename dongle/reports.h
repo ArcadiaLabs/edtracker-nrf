@@ -93,7 +93,19 @@ typedef struct
 	int16_t		accel_bias[3];
 } FeatRep_CalibrationData;
 
+// *****************************************************************
+// *****************************************************************
+// *****************************************************************
 
+#define RF_STATUS_REPORT_ID				5
+
+// direction: dongle -> PC
+typedef struct
+{
+	uint8_t		report_id;		// RF_STATUS_REPORT_ID
+
+	uint8_t		num_packets;	// number of packets received in the last second
+} FeatRep_RFStatus;
 
 #ifdef _MSC_VER
 # pragma pack(pop)

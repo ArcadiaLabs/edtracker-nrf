@@ -33,9 +33,6 @@
     <ClInclude Include="myutils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="feature_reports.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="wht_dialog.h">
       <Filter>Header Files</Filter>
     </ClInclude>

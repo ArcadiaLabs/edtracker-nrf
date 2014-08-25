@@ -105,7 +105,7 @@ void WHTDevice::Close()
 	hDevice = NULL;
 }
 
-bool WHTDevice::GetFeatureReport(uint8_t* buffer, int report_size)
+bool WHTDevice::GetFeatureReportRaw(uint8_t* buffer, int report_size)
 {
 	if (HidD_GetFeature(hDevice, buffer, report_size) == FALSE)
 	{
@@ -116,12 +116,12 @@ bool WHTDevice::GetFeatureReport(uint8_t* buffer, int report_size)
 	return true;
 }
 
-bool WHTDevice::SetFeatureReport(const uint8_t* buffer, int report_size)
+bool WHTDevice::SetFeatureReportRaw(const uint8_t* buffer, int report_size)
 {
 	return HidD_SetFeature(hDevice, (PVOID) buffer, report_size) == TRUE;
 }
 
-bool WHTDevice::GetInputReport(uint8_t* buffer, int report_size)
+bool WHTDevice::GetInputReportRaw(uint8_t* buffer, int report_size)
 {
 	return HidD_GetInputReport(hDevice, (PVOID) buffer, report_size) == TRUE;
 }
