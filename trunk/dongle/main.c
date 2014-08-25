@@ -19,6 +19,9 @@
 #include "proc_packet.h"
 #include "dongle_settings.h"
 
+#define NUM_COUNTER_PACKETS	10
+uint8_t total_packets[NUM_COUNTER_PACKETS];		// holds the last ~1 second of packets
+
 // These are called by the USB code in usb.c
 void on_set_report(void)
 {
@@ -98,6 +101,22 @@ void on_get_report(void)
 
 		// send the data
 		in0bc = sizeof(FeatRep_CalibrationData);
+		
+	} else if (usbReqHidGetSetReport.reportID == RF_STATUS_REPORT_ID) {
+	
+		FeatRep_RFStatus __xdata * pResult = (FeatRep_RFStatus __xdata *) in0buf;
+		uint8_t c;
+		uint16_t total = 0;
+		
+		pResult->report_id = RF_STATUS_REPORT_ID;
+		
+		for (c = 0; c < NUM_COUNTER_PACKETS; ++c)
+			total += total_packets[c];
+
+		pResult->num_packets = total;
+			
+		// send the data
+		in0bc = sizeof(FeatRep_RFStatus);
 	}
 }
 
@@ -106,7 +125,9 @@ void main(void)
 	bool joystick_report_ready = false;
 	__xdata mpu_packet_t packet;
 	uint8_t last_timer_capture;
-	uint8_t total_packets[10], total_packets_ndx;		// last 1 second of packets
+	//uint8_t total_packets[10];
+	uint8_t total_packets_ndx;
+	uint8_t curr_packets;
 	
 	P0DIR = 0x00;	// all outputs
 	P0ALT = 0x00;	// all GPIO default behavior
@@ -118,7 +139,7 @@ void main(void)
 	last_timer_capture = 0;
 	
 	memset(total_packets, 0, sizeof(total_packets));
-	total_packets_ndx = 0;
+	curr_packets = total_packets_ndx = 0;
 	
 	LED_off();
 	
@@ -136,24 +157,26 @@ void main(void)
 		usbPoll();	// handles USB events
 		dbgPoll();	// send chars from the UART TX buffer
 		
-		CCL3 = 1;	// capture CCH3
+		// check the timer
+		CCL3 = 1;	// capture CCH3 and check for overflow
 		if (last_timer_capture > CCH3)
 		{
+			total_packets[total_packets_ndx] = curr_packets;
+			
 			total_packets_ndx++;
-			if (total_packets_ndx == sizeof(total_packets))
+			if (total_packets_ndx == NUM_COUNTER_PACKETS)
 				total_packets_ndx = 0;
-				
-			total_packets[total_packets_ndx] = 0;
+
+			curr_packets = 0;
 		}
 		last_timer_capture = CCH3;
 
-		// reset the timer
 		// try to read the recv buffer, then process the received data
 		if (rf_dngl_recv(&packet, sizeof packet) == sizeof packet)
 		{
 			joystick_report_ready |= process_packet(&packet);
 
-			total_packets[total_packets_ndx]++;
+			curr_packets++;
 			
 			LED_on();
 		} else {

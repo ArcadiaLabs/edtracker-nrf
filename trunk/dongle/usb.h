@@ -207,7 +207,7 @@ typedef struct
 	usb_ep_desc_t	ep1in;
 } usb_conf_desc_joystick_t;
 
-#define JOYSTICK_HID_REPORT_DESC_SIZE	95
+#define JOYSTICK_HID_REPORT_DESC_SIZE	116
 #define USB_STRING_DESC_COUNT			4
 
 extern __code const usb_conf_desc_joystick_t usb_conf_desc;
@@ -234,10 +234,14 @@ bool usbHasIdleElapsed(void);
 
 extern __xdata uint8_t usbIdleRate;
 
+#define USB_DEFAULT_EP_SIZE		0x08
+
 // endpoint buffer sizes
 #define USB_EP0_SIZE	0x40
 #define USB_EP1_SIZE	0x10
-
-#define USB_DEFAULT_EP_SIZE		0x08
+#define USB_EP2_SIZE	USB_DEFAULT_EP_SIZE
+#define USB_EP3_SIZE	USB_DEFAULT_EP_SIZE
+#define USB_EP4_SIZE	USB_DEFAULT_EP_SIZE
+#define USB_EP5_SIZE	USB_DEFAULT_EP_SIZE
 
 #endif	// USB_H

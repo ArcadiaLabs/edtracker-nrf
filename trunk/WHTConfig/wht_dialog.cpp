@@ -107,7 +107,7 @@ void WHTDialog::OnCommand(int ctrl_id)
 		FeatRep_Command rep;
 		rep.report_id = COMMAND_REPORT_ID;
 		rep.command = CMD_CALIBRATE;
-		if (!device.SetFeatureReport((uint8_t*) &rep, sizeof(rep)))
+		if (!device.SetFeatureReport(rep))
 			MessageBox(hDialog, L"Unable to send data to dongle.", L"Error", MB_OK | MB_ICONERROR);
 
 	} else if (ctrl_id == IDC_BTN_SEND_TO_TRACKER) {
@@ -117,14 +117,19 @@ void WHTDialog::OnCommand(int ctrl_id)
 		{
 			MessageBox(hDialog, L"Wireless head tracker dongle not found.", L"Error", MB_OK | MB_ICONERROR);
 		} else {
-			ChangeConnectedStateUI(true);
 			ReadConfigFromDevice();
 			ReadCalibrationData();
+			ChangeConnectedStateUI(true);
 		}
 
 	} else if (ctrl_id == IDC_BTN_DISCONNECT) {
+
 		device.Close();
 		ChangeConnectedStateUI(false);
+
+	} else if (ctrl_id == IDC_BTN_READ_CALIBRATION) {
+
+		ReadCalibrationData();
 	}
 }
 
@@ -132,15 +137,36 @@ void WHTDialog::OnTimer()
 {
 	if (device.IsOpen())
 	{
-		// SetStatusbarText(0, int2str(GetTickCount()));
 		hid_joystick_report_t rep;
 		rep.report_id = JOYSTICK_REPORT_ID;
-		if (device.GetInputReport((uint8_t*) &rep, sizeof(rep)))
+		if (device.GetInputReport(rep))
 		{
-			SendMessage(GetCtrl(IDC_PRG_AXIS_X), PBM_SETPOS, (WPARAM) rep.x + 32768, 0);
-			SendMessage(GetCtrl(IDC_PRG_AXIS_Y), PBM_SETPOS, (WPARAM) rep.y + 32768, 0);
-			SendMessage(GetCtrl(IDC_PRG_AXIS_Z), PBM_SETPOS, (WPARAM) rep.z + 32768, 0);
+			SendMessage(GetCtrl(IDC_PRG_AXIS_X), PBM_SETPOS, (WPARAM) rep.x + 0x8000, 0);
+			SendMessage(GetCtrl(IDC_PRG_AXIS_Y), PBM_SETPOS, (WPARAM) rep.y + 0x8000, 0);
+			SendMessage(GetCtrl(IDC_PRG_AXIS_Z), PBM_SETPOS, (WPARAM) rep.z + 0x8000, 0);
 		}
+
+		// get the RF state
+		FeatRep_RFStatus repRF;
+		repRF.report_id = RF_STATUS_REPORT_ID;
+		if (device.GetFeatureReport(repRF))
+		{
+			std::wstring res;
+			if (repRF.num_packets >= 48)
+				res = L"100";
+			else
+				res = int2str(repRF.num_packets * 2);
+
+			SetStatusbarText(0, L"RF packets: " + res + L"%");
+		}
+
+	} else {
+
+		SendMessage(GetCtrl(IDC_PRG_AXIS_X), PBM_SETPOS, 0, 0);
+		SendMessage(GetCtrl(IDC_PRG_AXIS_Y), PBM_SETPOS, 0, 0);
+		SendMessage(GetCtrl(IDC_PRG_AXIS_Z), PBM_SETPOS, 0, 0);
+
+		SetStatusbarText(0, L"");
 	}
 }
 
@@ -164,7 +190,7 @@ void WHTDialog::InitStatusbar()
 	// make the status bar parts
 	const int NUM_PARTS = 5;
 	int parts[NUM_PARTS];
-	parts[0] = 80;
+	parts[0] = 100;
 	parts[1] = 160;
 	parts[2] = 240;
 	parts[3] = 320;
@@ -233,9 +259,9 @@ void WHTDialog::ReadConfigFromDevice()
 {
 	debug(L"reading FeatRep_AxisConfig");
 
-	FeatRep_AxisConfig rep;
-	rep.report_id = AXIS_CONFIG_REPORT_ID;
-	if (!device.GetFeatureReport((uint8_t*) &rep, sizeof(rep)))
+	FeatRep_DongleSettings rep;
+	rep.report_id = DONGLE_SETTINGS_REPORT_ID;
+	if (!device.GetFeatureReport(rep))
 	{
 		MessageBox(hDialog, L"Unable to read from dongle.\n", L"Error", MB_OK | MB_ICONERROR);
 		return;
@@ -245,6 +271,8 @@ void WHTDialog::ReadConfigFromDevice()
 	SetRadioState(IDC_RDB_EXPONENTIAL, rep.is_linear == 0);
 
 	SetCheckState(IDC_CHK_SELFCENTER, rep.is_selfcenter != 0);
+
+	SetCtrlText(IDC_EDT_X_DRIFT_COMP, flt2str(rep.x_drift_comp));
 
 	SetCtrlText(IDC_EDT_LIN_FACT_X, flt2str(rep.lin_fact_x));
 	SetCtrlText(IDC_EDT_LIN_FACT_Y, flt2str(rep.lin_fact_y));
@@ -269,7 +297,7 @@ void WHTDialog::ReadCalibrationData()
 
 	FeatRep_CalibrationData rep;
 	rep.report_id = CALIBRATION_DATA_REPORT_ID;
-	if (!device.GetFeatureReport((uint8_t*) &rep, sizeof(rep)))
+	if (!device.GetFeatureReport(rep))
 	{
 		MessageBox(hDialog, L"Unable to read calibration data.\n", L"Error", MB_OK | MB_ICONERROR);
 		return;
@@ -293,12 +321,14 @@ void WHTDialog::ReadCalibrationData()
 
 void WHTDialog::SendConfigToDevice()
 {
-	debug(L"sending FeatRep_AxisConfig");
+	debug(L"sending FeatRep_DongleSettings");
 
-	FeatRep_AxisConfig rep;
+	FeatRep_DongleSettings rep;
 
 	rep.is_linear = GetRadioState(IDC_RDB_LINEAR) ? 1 : 0;
 	rep.is_selfcenter = GetCheckState(IDC_CHK_SELFCENTER) ? 1 : 0;
+
+	rep.x_drift_comp = GetCtrlTextFloat(IDC_EDT_X_DRIFT_COMP);
 
 	rep.lin_fact_x = GetCtrlTextFloat(IDC_EDT_LIN_FACT_X);
 	rep.lin_fact_y = GetCtrlTextFloat(IDC_EDT_LIN_FACT_Y);
@@ -308,8 +338,8 @@ void WHTDialog::SendConfigToDevice()
 	rep.exp_fact_y = GetCtrlTextFloat(IDC_EDT_EXP_FACT_Y);
 	rep.exp_fact_z = GetCtrlTextFloat(IDC_EDT_EXP_FACT_Z);
 
-	rep.report_id = AXIS_CONFIG_REPORT_ID;
-	if (!device.SetFeatureReport((uint8_t*) &rep, sizeof(rep)))
+	rep.report_id = DONGLE_SETTINGS_REPORT_ID;
+	if (!device.SetFeatureReport(rep))
 		MessageBox(hDialog, L"Not sent!", L"Error", MB_OK | MB_ICONERROR);
 }
 
@@ -318,11 +348,13 @@ void WHTDialog::ChangeConnectedStateUI(bool is_connected)
     EnableWindow(GetCtrl(IDC_BTN_CONNECT), is_connected ? FALSE : TRUE);
     EnableWindow(GetCtrl(IDC_BTN_DISCONNECT), is_connected ? TRUE : FALSE);
 
+	EnableWindow(GetCtrl(IDC_BTN_READ_CALIBRATION), is_connected ? TRUE : FALSE);
 	EnableWindow(GetCtrl(IDC_BTN_CALIBRATE), is_connected ? TRUE : FALSE);
 	EnableWindow(GetCtrl(IDC_BTN_SEND_TO_TRACKER), is_connected ? TRUE : FALSE);
 	EnableWindow(GetCtrl(IDC_RDB_LINEAR), is_connected ? TRUE : FALSE);
     EnableWindow(GetCtrl(IDC_RDB_EXPONENTIAL), is_connected ? TRUE : FALSE);
 	EnableWindow(GetCtrl(IDC_CHK_SELFCENTER), is_connected ? TRUE : FALSE);
+	EnableWindow(GetCtrl(IDC_EDT_X_DRIFT_COMP), is_connected ? TRUE : FALSE);
 	EnableWindow(GetCtrl(IDC_EDT_LIN_FACT_X), is_connected ? TRUE : FALSE);
 	EnableWindow(GetCtrl(IDC_EDT_LIN_FACT_Y), is_connected ? TRUE : FALSE);
 	EnableWindow(GetCtrl(IDC_EDT_LIN_FACT_Z), is_connected ? TRUE : FALSE);

@@ -59,18 +59,18 @@ void usbInit(void)
 
 	// setup the USB RAM
 	bout1addr = USB_EP0_SIZE/2;
-	bout2addr = USB_EP0_SIZE/2 + USB_DEFAULT_EP_SIZE/2;
-	bout3addr = USB_EP0_SIZE/2 + 2*USB_DEFAULT_EP_SIZE/2;
-	bout4addr = USB_EP0_SIZE/2 + 3*USB_DEFAULT_EP_SIZE/2;
-	bout5addr = USB_EP0_SIZE/2 + 4*USB_DEFAULT_EP_SIZE/2;
+	bout2addr = (USB_EP0_SIZE + USB_EP1_SIZE)/2;
+	bout3addr = (USB_EP0_SIZE + USB_EP1_SIZE + USB_EP2_SIZE)/2;
+	bout4addr = (USB_EP0_SIZE + USB_EP1_SIZE + USB_EP2_SIZE + USB_EP3_SIZE)/2;
+	bout5addr = (USB_EP0_SIZE + USB_EP1_SIZE + USB_EP2_SIZE + USB_EP3_SIZE + USB_EP4_SIZE)/2;
 
-	binstaddr = 0xc0;	//bout5addr/4;	// IN start address
+	binstaddr = 0xc0;		// IN start address
 
 	bin1addr = USB_EP0_SIZE/2;
-	bin2addr = USB_EP0_SIZE/2 + USB_EP1_SIZE/2;
-	bin3addr = USB_EP0_SIZE/2 + 2*USB_DEFAULT_EP_SIZE/2;
-	bin4addr = USB_EP0_SIZE/2 + 3*USB_DEFAULT_EP_SIZE/2;
-	bin5addr = USB_EP0_SIZE/2 + 4*USB_DEFAULT_EP_SIZE/2;
+	bin2addr = (USB_EP0_SIZE + USB_EP1_SIZE)/2;
+	bin3addr = (USB_EP0_SIZE + USB_EP1_SIZE + USB_EP2_SIZE)/2;
+	bin4addr = (USB_EP0_SIZE + USB_EP1_SIZE + USB_EP2_SIZE + USB_EP3_SIZE)/2;
+	bin5addr = (USB_EP0_SIZE + USB_EP1_SIZE + USB_EP2_SIZE + USB_EP3_SIZE + USB_EP4_SIZE)/2;
 
 	// enable endpoints
 	inbulkval = 0x03;	// enables IN endpoints EP0 and EP1
