@@ -12,6 +12,11 @@ private:
 	void ReadCalibrationData();
 	void SendConfigToDevice();
 
+	HWND GetCtrl(int ctrl_id)
+	{
+		return GetDlgItem(hDialog, ctrl_id);
+	}
+
 	void InitStatusbar();
 	void SetStatusbarText(int part, const std::wstring& text);
 
@@ -52,8 +57,7 @@ private:
 	void OnTrayNotify(LPARAM lParam);
 	void OnMinimize();
 
-	void ConnectedUI();
-	void DisconnectedUI();
+	void ChangeConnectedStateUI(bool is_connected);
 
 	void Hide()
 	{

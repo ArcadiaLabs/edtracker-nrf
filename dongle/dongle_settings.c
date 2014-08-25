@@ -5,19 +5,20 @@
 
 #include <compiler_mcs51.h>
 
+#include "reports.h"
 #include "dongle_settings.h"
 #include "reg24lu1.h"
 #include "nrfdbg.h"
 
 // 512 bytes each
-#define DATA0_ADDR		((dongle_settings_t __xdata *) 0x7c00)
+#define DATA0_ADDR		((FeatRep_DongleSettings __xdata *) 0x7c00)
 #define DATA0_PAGE_NUM	62
-#define DATA1_ADDR		((dongle_settings_t1 __xdata *) 0x7e00)
+#define DATA1_ADDR		((FeatRep_DongleSettings __xdata *) 0x7e00)
 #define DATA1_PAGE_NUM	63
 
 #define DATA_PAGE_SIZE			0x200
 // how many settings blocks can we store in the two pages
-#define BLOCKS_CAPACITY			((DATA_PAGE_SIZE*2) / sizeof(dongle_settings_t))
+#define BLOCKS_CAPACITY			((DATA_PAGE_SIZE*2) / sizeof(FeatRep_DongleSettings))
 
 /*
 void list_settings(void)
@@ -40,9 +41,9 @@ void list_settings(void)
 }
 */
 
-__xdata dongle_settings_t default_settings =
+__xdata FeatRep_DongleSettings default_settings =
 {
-	0,		// is_empty
+	0,		// report_id		is_empty
 	
 	1,		// is_selfcenter
 	0,		// is_linear
@@ -54,6 +55,8 @@ __xdata dongle_settings_t default_settings =
 	12.0,	// exp_fact_x
 	12.0,	// exp_fact_y
 	12.0,	// exp_fact_z
+	
+	0.0,	// x_drift_comp
 };
 
 void flash_page_erase(uint8_t pn)
@@ -99,23 +102,23 @@ void flash_bytes_write(uint16_t a, uint8_t __xdata * p, uint16_t n)
 
 int8_t get_ndx_of_current_settings(void)
 {
-	const dongle_settings_t __xdata * pStart = DATA0_ADDR;
+	const FeatRep_DongleSettings __xdata * pStart = DATA0_ADDR;
 	uint8_t cnt;
 	
 	// if no settings have been saved yet
-	if (pStart->is_empty == 0xff)
+	if (pStart->report_id == 0xff)
 		return -1;
 
 	// find the last valid settings block (with valid == 0x00) in the page
-	for (cnt = 0; cnt < BLOCKS_CAPACITY - 1  &&  pStart[cnt + 1].is_empty != 0xff; ++cnt)
+	for (cnt = 0; cnt < BLOCKS_CAPACITY - 1  &&  pStart[cnt + 1].report_id != 0xff; ++cnt)
 		;
 
 	return cnt;
 }
 
-const dongle_settings_t __xdata * get_settings(void)
+const FeatRep_DongleSettings __xdata * get_settings(void)
 {
-	const dongle_settings_t __xdata * pStart = DATA0_ADDR;
+	const FeatRep_DongleSettings __xdata * pStart = DATA0_ADDR;
 	int8_t ndx;
 
 	ndx = get_ndx_of_current_settings();
@@ -130,10 +133,10 @@ const dongle_settings_t __xdata * get_settings(void)
 	return pStart + ndx;
 }
 
-void save_settings(const dongle_settings_t __xdata * pNewSettings)
+void save_settings(const FeatRep_DongleSettings __xdata * pNewSettings)
 {
 	// get the next empty slot
-	dongle_settings_t save_img;
+	FeatRep_DongleSettings save_img;
 	int8_t new_ndx = get_ndx_of_current_settings() + 1;
 
 	// if all slots are full
@@ -148,7 +151,8 @@ void save_settings(const dongle_settings_t __xdata * pNewSettings)
 	
 	memcpy(&save_img, pNewSettings, sizeof(save_img));
 	
-	save_img.is_empty = 0x00;
+	save_img.report_id = 0x00;		// this is not really the report ID, it's just a flag that
+									// shows if the block is used or not
 	
 	// save the new settings
 	flash_bytes_write((uint16_t)(DATA0_ADDR + new_ndx), (uint8_t __xdata *) &save_img, sizeof(save_img));

@@ -289,68 +289,7 @@ void usbHidRequest(void)
 
 	} else if (bRequest == USB_REQ_HID_GET_REPORT) {
 
-		// this requests the HID report we defined with the HID report descriptor.
-		// this is usually requested over EP1 IN, but can be requested over EP0 too.
-		if (usbReqHidGetSetReport.reportID == JOYSTICK_REPORT_ID)
-		{
-			memcpy(in0buf, &usb_joystick_report, sizeof(usb_joystick_report));
-		
-			// send the data on it's way
-			in0bc = sizeof(usb_joystick_report);
-
-		} else if (usbReqHidGetSetReport.reportID == AXIS_CONFIG_REPORT_ID) {
-
-			// at the moment dongle_settings_t and FeatRep_AxisConfig fields
-			// have the same members, so we're abusing this fact.
-			// I'm sure it will come back and bite me in the ass,
-			// but I'll leave it as is for now
-			memcpy(in0buf, get_settings(), sizeof(dongle_settings_t));
-
-			in0buf[0] = AXIS_CONFIG_REPORT_ID;
-			
-			// send the data on it's way
-			in0bc = sizeof(FeatRep_AxisConfig);
-
-		} else if (usbReqHidGetSetReport.reportID == CALIBRATION_DATA_REPORT_ID) {
-
-			// tell the head tracker to send us the calibration data
-			uint8_t ack_payload = CMD_SEND_CALIB_DATA;
-			uint8_t pckt_cnt, bytes_rcvd;
-			calib_data_t calib_data;
-			FeatRep_CalibrationData __xdata * pReport = (FeatRep_CalibrationData __xdata *) in0buf;
-			
-			rf_dngl_queue_ack_payload(&ack_payload, 1);
-
-			pReport->report_id = CALIBRATION_DATA_REPORT_ID;
-			pReport->has_tracker_responded = 0;
-			
-			// now wait for that data
-			for (pckt_cnt = 0; pckt_cnt < 5; ++pckt_cnt)
-			{
-				bytes_rcvd = rf_dngl_recv(&calib_data, sizeof(calib_data));
-				if (bytes_rcvd == sizeof(calib_data))
-				{
-					pReport->has_tracker_responded = 1;
-					pReport->is_calibrated = calib_data.is_calibrated;
-					pReport->gyro_bias[0] = calib_data.gyro_bias[0];
-					pReport->gyro_bias[1] = calib_data.gyro_bias[1];
-					pReport->gyro_bias[2] = calib_data.gyro_bias[2];
-					pReport->accel_bias[0] = calib_data.accel_bias[0];
-					pReport->accel_bias[1] = calib_data.accel_bias[1];
-					pReport->accel_bias[2] = calib_data.accel_bias[2];
-
-					dprintf("%c %d %d %d\n", calib_data.is_calibrated ? 'C' : 'N',
-											calib_data.accel_bias[0], calib_data.accel_bias[1], calib_data.accel_bias[2]);
-					
-					break;
-				}
-				
-				delay_ms(20);
-			}
-
-			// send the data
-			in0bc = sizeof(FeatRep_CalibrationData);
-		}
+		on_get_report();
 
 	} else if (bRequest == USB_REQ_HID_GET_IDLE) {
 
@@ -407,10 +346,7 @@ void usbRequestReceived(void)
 void usbRequestDataReceived(void)
 {
 	if (usbRequest.bRequest == USB_REQ_HID_SET_REPORT)
-	{
-		memcpy(&feature_report, out0buf, MIN(sizeof(feature_report), usbReqHidGetSetReport.wLength));
-		new_set_report = true;
-	}
+		on_set_report();		// size == usbReqHidGetSetReport.wLength
 		
 	// send an empty packet to ACK the data
 	in0bc = 0x00;

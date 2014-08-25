@@ -82,18 +82,16 @@ WHTDialog::WHTDialog(HWND hDlg)
 						16, 16, LR_SHARED);
 	SendMessage(hDialog, WM_SETICON, ICON_SMALL, (LPARAM) hIconSmall);
 
-	DisconnectedUI();
+	ChangeConnectedStateUI(false);
 
-	SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_X), PBM_SETRANGE, 0, MAKELPARAM(0, 0xffff));
-	SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_Y), PBM_SETRANGE, 0, MAKELPARAM(0, 0xffff));
-	SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_Z), PBM_SETRANGE, 0, MAKELPARAM(0, 0xffff));
+	SendMessage(GetCtrl(IDC_PRG_AXIS_X), PBM_SETRANGE, 0, MAKELPARAM(0, 0xffff));
+	SendMessage(GetCtrl(IDC_PRG_AXIS_Y), PBM_SETRANGE, 0, MAKELPARAM(0, 0xffff));
+	SendMessage(GetCtrl(IDC_PRG_AXIS_Z), PBM_SETRANGE, 0, MAKELPARAM(0, 0xffff));
 
 	// start the timer
 	SetTimer(hDialog, 1, 100, NULL);
 
 	InitStatusbar();
-
-	// SendMessage(this->get_hwnd(), SB_SETTEXT, part, (LPARAM) text.c_str());
 }
 
 WHTDialog::~WHTDialog()
@@ -119,14 +117,14 @@ void WHTDialog::OnCommand(int ctrl_id)
 		{
 			MessageBox(hDialog, L"Wireless head tracker dongle not found.", L"Error", MB_OK | MB_ICONERROR);
 		} else {
-			ConnectedUI();
+			ChangeConnectedStateUI(true);
 			ReadConfigFromDevice();
 			ReadCalibrationData();
 		}
 
 	} else if (ctrl_id == IDC_BTN_DISCONNECT) {
 		device.Close();
-		DisconnectedUI();
+		ChangeConnectedStateUI(false);
 	}
 }
 
@@ -139,9 +137,9 @@ void WHTDialog::OnTimer()
 		rep.report_id = JOYSTICK_REPORT_ID;
 		if (device.GetInputReport((uint8_t*) &rep, sizeof(rep)))
 		{
-			SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_X), PBM_SETPOS, (WPARAM) rep.x + 32768, 0);
-			SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_Y), PBM_SETPOS, (WPARAM) rep.y + 32768, 0);
-			SendMessage(GetDlgItem(hDialog, IDC_PRG_AXIS_Z), PBM_SETPOS, (WPARAM) rep.z + 32768, 0);
+			SendMessage(GetCtrl(IDC_PRG_AXIS_X), PBM_SETPOS, (WPARAM) rep.x + 32768, 0);
+			SendMessage(GetCtrl(IDC_PRG_AXIS_Y), PBM_SETPOS, (WPARAM) rep.y + 32768, 0);
+			SendMessage(GetCtrl(IDC_PRG_AXIS_Z), PBM_SETPOS, (WPARAM) rep.z + 32768, 0);
 		}
 	}
 }
@@ -172,12 +170,12 @@ void WHTDialog::InitStatusbar()
 	parts[3] = 320;
 	parts[4] = -1;
 
-	SendMessage(GetDlgItem(hDialog, IDC_STATUS_BAR), SB_SETPARTS, NUM_PARTS, (LPARAM) parts);
+	SendMessage(GetCtrl(IDC_STATUS_BAR), SB_SETPARTS, NUM_PARTS, (LPARAM) parts);
 }
 
 void WHTDialog::SetStatusbarText(int part, const std::wstring& text)
 {
-	SendMessage(GetDlgItem(hDialog, IDC_STATUS_BAR), SB_SETTEXT, part, (LPARAM) text.c_str());
+	SendMessage(GetCtrl(IDC_STATUS_BAR), SB_SETTEXT, part, (LPARAM) text.c_str());
 }
 
 void WHTDialog::CreateTrayIcon()
@@ -214,21 +212,21 @@ void WHTDialog::RemoveTrayIcon()
 
 void WHTDialog::SetCtrlText(int ctrl_id, const std::wstring& text)
 {
-	SendMessage(GetDlgItem(hDialog, ctrl_id), WM_SETTEXT, 0, (LPARAM) text.c_str());
+	SendMessage(GetCtrl(ctrl_id), WM_SETTEXT, 0, (LPARAM) text.c_str());
 }
 
 float WHTDialog::GetCtrlTextFloat(int ctrl_id)
 {
 	const int BUFF_SIZE = 256;
 	wchar_t buff[BUFF_SIZE];
-	SendMessage(GetDlgItem(hDialog, ctrl_id), WM_GETTEXT, BUFF_SIZE, (LPARAM) buff);
+	SendMessage(GetCtrl(ctrl_id), WM_GETTEXT, BUFF_SIZE, (LPARAM) buff);
 
 	return (float) _wtof(buff);
 }
 
 void WHTDialog::SetRadioState(int ctrl_id, bool new_state)
 {
-	SendMessage(GetDlgItem(hDialog, ctrl_id), BM_SETCHECK, (WPARAM) (new_state ? BST_CHECKED : BST_UNCHECKED), 0);
+	SendMessage(GetCtrl(ctrl_id), BM_SETCHECK, (WPARAM) (new_state ? BST_CHECKED : BST_UNCHECKED), 0);
 }
 
 void WHTDialog::ReadConfigFromDevice()
@@ -315,38 +313,20 @@ void WHTDialog::SendConfigToDevice()
 		MessageBox(hDialog, L"Not sent!", L"Error", MB_OK | MB_ICONERROR);
 }
 
-void WHTDialog::ConnectedUI()
+void WHTDialog::ChangeConnectedStateUI(bool is_connected)
 {
-    EnableWindow(GetDlgItem(hDialog, IDC_BTN_CONNECT), FALSE);
-    EnableWindow(GetDlgItem(hDialog, IDC_BTN_DISCONNECT), TRUE);
+    EnableWindow(GetCtrl(IDC_BTN_CONNECT), is_connected ? FALSE : TRUE);
+    EnableWindow(GetCtrl(IDC_BTN_DISCONNECT), is_connected ? TRUE : FALSE);
 
-	EnableWindow(GetDlgItem(hDialog, IDC_BTN_CALIBRATE), TRUE);
-	EnableWindow(GetDlgItem(hDialog, IDC_BTN_SEND_TO_TRACKER), TRUE);
-	EnableWindow(GetDlgItem(hDialog, IDC_RDB_LINEAR), TRUE);
-    EnableWindow(GetDlgItem(hDialog, IDC_RDB_EXPONENTIAL), TRUE);
-	EnableWindow(GetDlgItem(hDialog, IDC_CHK_SELFCENTER), TRUE);
-	EnableWindow(GetDlgItem(hDialog, IDC_EDT_LIN_FACT_X), TRUE);
-	EnableWindow(GetDlgItem(hDialog, IDC_EDT_LIN_FACT_Y), TRUE);
-	EnableWindow(GetDlgItem(hDialog, IDC_EDT_LIN_FACT_Z), TRUE);
-	EnableWindow(GetDlgItem(hDialog, IDC_EDT_EXP_FACT_X), TRUE);
-	EnableWindow(GetDlgItem(hDialog, IDC_EDT_EXP_FACT_Y), TRUE);
-	EnableWindow(GetDlgItem(hDialog, IDC_EDT_EXP_FACT_Z), TRUE);
-}
-
-void WHTDialog::DisconnectedUI()
-{
-    EnableWindow(GetDlgItem(hDialog, IDC_BTN_CONNECT), TRUE);
-    EnableWindow(GetDlgItem(hDialog, IDC_BTN_DISCONNECT), FALSE);
-
-	EnableWindow(GetDlgItem(hDialog, IDC_BTN_CALIBRATE), FALSE);
-	EnableWindow(GetDlgItem(hDialog, IDC_BTN_SEND_TO_TRACKER), FALSE);
-	EnableWindow(GetDlgItem(hDialog, IDC_RDB_LINEAR), FALSE);
-    EnableWindow(GetDlgItem(hDialog, IDC_RDB_EXPONENTIAL), FALSE);
-	EnableWindow(GetDlgItem(hDialog, IDC_CHK_SELFCENTER), FALSE);
-	EnableWindow(GetDlgItem(hDialog, IDC_EDT_LIN_FACT_X), FALSE);
-	EnableWindow(GetDlgItem(hDialog, IDC_EDT_LIN_FACT_Y), FALSE);
-	EnableWindow(GetDlgItem(hDialog, IDC_EDT_LIN_FACT_Z), FALSE);
-	EnableWindow(GetDlgItem(hDialog, IDC_EDT_EXP_FACT_X), FALSE);
-	EnableWindow(GetDlgItem(hDialog, IDC_EDT_EXP_FACT_Y), FALSE);
-	EnableWindow(GetDlgItem(hDialog, IDC_EDT_EXP_FACT_Z), FALSE);
+	EnableWindow(GetCtrl(IDC_BTN_CALIBRATE), is_connected ? TRUE : FALSE);
+	EnableWindow(GetCtrl(IDC_BTN_SEND_TO_TRACKER), is_connected ? TRUE : FALSE);
+	EnableWindow(GetCtrl(IDC_RDB_LINEAR), is_connected ? TRUE : FALSE);
+    EnableWindow(GetCtrl(IDC_RDB_EXPONENTIAL), is_connected ? TRUE : FALSE);
+	EnableWindow(GetCtrl(IDC_CHK_SELFCENTER), is_connected ? TRUE : FALSE);
+	EnableWindow(GetCtrl(IDC_EDT_LIN_FACT_X), is_connected ? TRUE : FALSE);
+	EnableWindow(GetCtrl(IDC_EDT_LIN_FACT_Y), is_connected ? TRUE : FALSE);
+	EnableWindow(GetCtrl(IDC_EDT_LIN_FACT_Z), is_connected ? TRUE : FALSE);
+	EnableWindow(GetCtrl(IDC_EDT_EXP_FACT_X), is_connected ? TRUE : FALSE);
+	EnableWindow(GetCtrl(IDC_EDT_EXP_FACT_Y), is_connected ? TRUE : FALSE);
+	EnableWindow(GetCtrl(IDC_EDT_EXP_FACT_Z), is_connected ? TRUE : FALSE);
 }
