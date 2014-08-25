@@ -220,8 +220,12 @@ extern __code const uint8_t joystick_hid_report_descriptor[JOYSTICK_HID_REPORT_D
 
 #define MAX_FEATURE_REPORT_BYTES		32
 
-extern bool new_set_report;
-extern uint8_t feature_report[MAX_FEATURE_REPORT_BYTES];
+
+// These two are defined by the user code.
+// They are called by the USB code when the host has a GET_REPORT or SET_REPORT for us
+void on_get_report(void);
+void on_set_report(void);
+
 
 void usbInit(void);
 void usbPoll(void);

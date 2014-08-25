@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <compiler_mcs51.h>
 
@@ -11,9 +12,9 @@
 #include "dongle_settings.h"
 
 // process_packet function processes the data from the sensor MPU-6050 attached to the player's head,
-// and calculated xyz coordinates from the received quaternions.
+// and calculated xyz coordinates from the quaternions received.
 //
-// Almost the entire function is copied from the ED Tracker project.
+// Almost the entire function is more-or-less copied from the ED Tracker project.
 // 
 // ED Tracker can be found here: http://edtracker.org.uk/
 
@@ -28,11 +29,22 @@ bool calibrated = false;
 int16_t sampleCount = 0;
 uint8_t pckt_cnt = 0;
 
-#define CALC_DRIFT_COMP
+void save_x_drift_comp(void)
+{
+	// get the current settings
+	FeatRep_DongleSettings __xdata new_settings;
+	memcpy(&new_settings, get_settings(), sizeof(FeatRep_DongleSettings));
+	
+	// set the new value
+	new_settings.x_drift_comp = get_curr_x_drift_comp();
+	
+	save_settings(&new_settings);
+}
 
-#ifdef CALC_DRIFT_COMP
-float xDriftComp = 0.0;
-#endif
+float get_curr_x_drift_comp(void)
+{
+	return dX / (float)driftSamples;
+}
 
 float constrain_flt(float val)
 {
@@ -63,7 +75,7 @@ bool process_packet(mpu_packet_t* pckt)
 	float qww, qxx, qyy, qzz;
 	int32_t iX, iY, iZ;
 	
-	const dongle_settings_t __xdata * pSettings = get_settings();
+	const FeatRep_DongleSettings __xdata * pSettings = get_settings();
 	
 	qw = (float)(pckt->quat[0]) / 16384.0f;
 	qx = (float)(pckt->quat[1]) / 16384.0f;
@@ -99,9 +111,10 @@ bool process_packet(mpu_packet_t* pckt)
 			++sampleCount;
 		} else {
 			calibrated = true;
-			cx = cx / (float)sampleCount;
-			cy = cy / (float)sampleCount;
-			cz = cz / (float)sampleCount;
+
+			cx /= (float)sampleCount;
+			cy /= (float)sampleCount;
+			cz /= (float)sampleCount;
 
 			dX = dY = dZ = 0.0;
 			driftSamples = -2;
@@ -111,11 +124,11 @@ bool process_packet(mpu_packet_t* pckt)
 		return false;
 	}
 
-	// Have we been asked to recalibrate?
+	// has the user pressed the recenter button on the tracker?
 	if (pckt->flags & FLAG_RECENTER)
 	{
 		sampleCount = 0;
-		cx = cy = cz = 0;
+		cx = cy = cz = 0.0;
 		calibrated = false;
 
 		return false;
@@ -139,7 +152,7 @@ bool process_packet(mpu_packet_t* pckt)
 	newY = constrain_flt(newY);
 	newZ = constrain_flt(newZ);
 
-	// printf_fast_f("%6.0f %6.0f %6.0f\n", newX, newY, newZ);
+	// dprintf("%6.0f %6.0f %6.0f\n", newX, newY, newZ);
 	
 	if (pSettings->is_linear)
 	{
@@ -183,18 +196,17 @@ bool process_packet(mpu_packet_t* pckt)
 		{
 			// NB this currently causes a small but visible jump in the
 			// view. Useful for debugging!
-			dzX = dzX * 0.1;
+			dzX *= 0.1;
 			cx += dzX * 0.1;
 			ticksInZone = 0;
 			dzX = 0.0;
 		}
 	}
 
-#ifdef CALC_DRIFT_COMP
-	// Apply X axis drift compensation
+	// Apply X axis drift compensation every 5th packet
 	if (++pckt_cnt == 5)
 	{
-		cx = cx + xDriftComp;	// depending on your mounting
+		cx += pSettings->x_drift_comp;	// depending on your mounting
 
 		if (cx > 65536.0)
 			cx -= 65536.0;
@@ -209,7 +221,6 @@ bool process_packet(mpu_packet_t* pckt)
 			dX += newX - lastX;
 		lastX = newX;
 	}
-#endif
 
 	return true;
 }

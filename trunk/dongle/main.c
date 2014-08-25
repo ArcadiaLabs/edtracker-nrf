@@ -19,21 +19,86 @@
 #include "proc_packet.h"
 #include "dongle_settings.h"
 
-void handle_set_report(void)
+// These are called by the USB code in usb.c
+void on_set_report(void)
 {
-	if (feature_report[0] == AXIS_CONFIG_REPORT_ID)
+	if (out0buf[0] == DONGLE_SETTINGS_REPORT_ID)
 	{
 		// save the data structure
-		save_settings((dongle_settings_t*) feature_report);
+		save_settings((FeatRep_DongleSettings*) out0buf);
 
-	} else if (feature_report[0] == COMMAND_REPORT_ID) {
+	} else if (out0buf[0] == COMMAND_REPORT_ID) {
 	
-		// tell the head tracker to recalibrate or send the calibration data
-		uint8_t ack_payload = feature_report[1];
+		// tell the head tracker to recalibrate
+		uint8_t ack_payload = out0buf[1];
 		rf_dngl_queue_ack_payload(&ack_payload, 1);
 	}
+}
 
-	new_set_report = false;
+void on_get_report(void)
+{
+	// this requests the HID report we defined with the HID report descriptor.
+	// this is usually requested over EP1 IN, but can be requested over EP0 too.
+	if (usbReqHidGetSetReport.reportID == JOYSTICK_REPORT_ID)
+	{
+		memcpy(in0buf, &usb_joystick_report, sizeof(usb_joystick_report));
+
+		// send the data on it's way
+		in0bc = sizeof(usb_joystick_report);
+
+	} else if (usbReqHidGetSetReport.reportID == DONGLE_SETTINGS_REPORT_ID) {
+
+		// at the moment dongle_settings_t and FeatRep_AxisConfig fields
+		// have the same members, so we're abusing this fact.
+		// I'm sure it will come back and bite me in the ass,
+		// but I'll leave it as is for now
+		memcpy(in0buf, get_settings(), sizeof(FeatRep_DongleSettings));
+		
+		in0buf[0] = DONGLE_SETTINGS_REPORT_ID;
+		
+		// send the data on it's way
+		in0bc = sizeof(FeatRep_DongleSettings);
+
+	} else if (usbReqHidGetSetReport.reportID == CALIBRATION_DATA_REPORT_ID) {
+
+		// tell the head tracker to send us the calibration data
+		uint8_t ack_payload = CMD_SEND_CALIB_DATA;
+		uint8_t pckt_cnt, bytes_rcvd;
+		calib_data_t calib_data;
+		FeatRep_CalibrationData __xdata * pReport = (FeatRep_CalibrationData __xdata *) in0buf;
+		
+		rf_dngl_queue_ack_payload(&ack_payload, 1);
+
+		pReport->report_id = CALIBRATION_DATA_REPORT_ID;
+		pReport->has_tracker_responded = 0;
+		
+		// now wait for that data
+		for (pckt_cnt = 0; pckt_cnt < 5; ++pckt_cnt)
+		{
+			bytes_rcvd = rf_dngl_recv(&calib_data, sizeof(calib_data));
+			if (bytes_rcvd == sizeof(calib_data))
+			{
+				pReport->has_tracker_responded = 1;
+				pReport->is_calibrated = calib_data.is_calibrated;
+				pReport->gyro_bias[0] = calib_data.gyro_bias[0];
+				pReport->gyro_bias[1] = calib_data.gyro_bias[1];
+				pReport->gyro_bias[2] = calib_data.gyro_bias[2];
+				pReport->accel_bias[0] = calib_data.accel_bias[0];
+				pReport->accel_bias[1] = calib_data.accel_bias[1];
+				pReport->accel_bias[2] = calib_data.accel_bias[2];
+
+				dprintf("%c %d %d %d\n", calib_data.is_calibrated ? 'C' : 'N',
+										calib_data.accel_bias[0], calib_data.accel_bias[1], calib_data.accel_bias[2]);
+				
+				break;
+			}
+			
+			delay_ms(20);
+		}
+
+		// send the data
+		in0bc = sizeof(FeatRep_CalibrationData);
+	}
 }
 
 void main(void)
@@ -68,7 +133,7 @@ void main(void)
 	
 	for (;;)
 	{
-		usbPoll();	// handles USB interrupts
+		usbPoll();	// handles USB events
 		dbgPoll();	// send chars from the UART TX buffer
 		
 		CCL3 = 1;	// capture CCH3
@@ -82,10 +147,6 @@ void main(void)
 		}
 		last_timer_capture = CCH3;
 
-		// handle incoming feature reports
-		if (new_set_report)
-			handle_set_report();
-		
 		// reset the timer
 		// try to read the recv buffer, then process the received data
 		if (rf_dngl_recv(&packet, sizeof packet) == sizeof packet)

@@ -31,7 +31,7 @@ void reset_joystick_report(void);
 // *****************************************************************
 // *****************************************************************
 
-#define AXIS_CONFIG_REPORT_ID			2
+#define DONGLE_SETTINGS_REPORT_ID			2
 
 // data direction: dongle <-> PC
 typedef struct
@@ -50,7 +50,9 @@ typedef struct
 	float		exp_fact_x;
 	float		exp_fact_y;
 	float		exp_fact_z;
-} FeatRep_AxisConfig;
+	
+	float		x_drift_comp;
+} FeatRep_DongleSettings;
 
 // *****************************************************************
 // *****************************************************************
