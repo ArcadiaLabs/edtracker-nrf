@@ -40,8 +40,6 @@ void on_set_report(void)
 			rf_dngl_queue_ack_payload(&command, 1);
 		} else if (command == CMD_RECENTER) {
 			recenter();
-		} else if (command == CMD_RESET_DRIFT) {
-			reset_x_drift_comp();
 		} else if (command == CMD_SAVE_DRIFT) {
 			save_x_drift_comp();
 		}
@@ -112,21 +110,24 @@ void on_get_report(void)
 		// send the data
 		in0bc = sizeof(FeatRep_CalibrationData);
 		
-	} else if (usbReqHidGetSetReport.reportID == RF_STATUS_REPORT_ID) {
+	} else if (usbReqHidGetSetReport.reportID == STATUS_REPORT_ID) {
 	
-		FeatRep_RFStatus __xdata * pResult = (FeatRep_RFStatus __xdata *) in0buf;
+		FeatRep_Status __xdata * pResult = (FeatRep_Status __xdata *) in0buf;
 		uint8_t c;
 		uint16_t total = 0;
 		
-		pResult->report_id = RF_STATUS_REPORT_ID;
+		pResult->report_id = STATUS_REPORT_ID;
 		
 		for (c = 0; c < NUM_COUNTER_PACKETS; ++c)
 			total += total_packets[c];
 
 		pResult->num_packets = total;
-			
+		pResult->new_drift_comp = get_curr_x_drift_comp();
+		pResult->driftSamples = driftSamples;
+		pResult->dX = dX;
+		
 		// send the data
-		in0bc = sizeof(FeatRep_RFStatus);
+		in0bc = sizeof(FeatRep_Status);
 	}
 }
 
@@ -135,7 +136,6 @@ void main(void)
 	bool joystick_report_ready = false;
 	__xdata mpu_packet_t packet;
 	uint8_t last_timer_capture;
-	//uint8_t total_packets[10];
 	uint8_t total_packets_ndx;
 	uint8_t curr_packets;
 	

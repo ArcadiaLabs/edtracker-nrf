@@ -5,9 +5,9 @@ class WHTDevice
 private:
 	HANDLE	hDevice;
 
-	void GetFeatureReportRaw(uint8_t* buffer, int report_size);
-	void SetFeatureReportRaw(const uint8_t* buffer, int report_size);
-	void GetInputReportRaw(uint8_t* buffer, int report_size);
+	void GetFeatureReportRaw(void* buffer, int report_size);
+	void SetFeatureReportRaw(const void* buffer, int report_size);
+	void GetInputReportRaw(void* buffer, int report_size);
 
 	void ThrowException(const wchar_t* during, int report_id);
 
@@ -26,18 +26,18 @@ public:
 	template <class T>
 	void GetFeatureReport(T& t)
 	{
-		GetFeatureReportRaw((uint8_t*) &t, sizeof(t));
+		GetFeatureReportRaw(&t, sizeof(t));
 	}
 
 	template <class T>
 	void SetFeatureReport(const T& t)
 	{
-		SetFeatureReportRaw((const uint8_t*) &t, sizeof(t));
+		SetFeatureReportRaw(&t, sizeof(t));
 	}
 
 	template <class T>
 	void GetInputReport(T& t)
 	{
-		GetInputReportRaw((uint8_t*) &t, sizeof(t));
+		GetInputReportRaw(&t, sizeof(t));
 	}
 };

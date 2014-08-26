@@ -113,20 +113,20 @@ void WHTDevice::ThrowException(const wchar_t* during, int report_id)
 	throw msg;
 }
 
-void WHTDevice::GetFeatureReportRaw(uint8_t* buffer, int report_size)
+void WHTDevice::GetFeatureReportRaw(void* buffer, int report_size)
 {
 	if (HidD_GetFeature(hDevice, buffer, report_size) != TRUE)
-		ThrowException(L"HidD_GetFeature", buffer[0]);
+		ThrowException(L"HidD_GetFeature", ((uint8_t*) buffer)[0]);
 }
 
-void WHTDevice::SetFeatureReportRaw(const uint8_t* buffer, int report_size)
+void WHTDevice::SetFeatureReportRaw(const void* buffer, int report_size)
 {
 	if (HidD_SetFeature(hDevice, (PVOID) buffer, report_size) != TRUE)
-		ThrowException(L"HidD_SetFeature", buffer[0]);
+		ThrowException(L"HidD_SetFeature", ((uint8_t*) buffer)[0]);
 }
 
-void WHTDevice::GetInputReportRaw(uint8_t* buffer, int report_size)
+void WHTDevice::GetInputReportRaw(void* buffer, int report_size)
 {
 	if (HidD_GetInputReport(hDevice, buffer, report_size) != TRUE)
-		ThrowException(L"HidD_GetInputReport", buffer[0]);
+		ThrowException(L"HidD_GetInputReport", ((uint8_t*) buffer)[0]);
 }
