@@ -62,9 +62,14 @@ typedef struct
 
 enum head_tracker_commands_t
 {
+	// the first two are sent to the head tracker over radio
 	CMD_CALIBRATE			= 1,
 	CMD_SEND_CALIB_DATA		= 2,
+	
+	// these are send from the PC to the dongle
 	CMD_RECENTER			= 3,
+	CMD_RESET_DRIFT			= 4,
+	CMD_SAVE_DRIFT			= 5,
 };
 
 // direction: PC -> dongle

@@ -27,14 +27,24 @@ void on_set_report(void)
 {
 	if (out0buf[0] == DONGLE_SETTINGS_REPORT_ID)
 	{
-		// save the data structure
+		// save the data structure we've just received
 		save_settings((FeatRep_DongleSettings*) out0buf);
 
 	} else if (out0buf[0] == COMMAND_REPORT_ID) {
+
+		uint8_t command = out0buf[1];
 	
-		// tell the head tracker to recalibrate
-		uint8_t ack_payload = out0buf[1];
-		rf_dngl_queue_ack_payload(&ack_payload, 1);
+		if (command == CMD_CALIBRATE)
+		{
+			// tell the head tracker to recalibrate
+			rf_dngl_queue_ack_payload(&command, 1);
+		} else if (command == CMD_RECENTER) {
+			recenter();
+		} else if (command == CMD_RESET_DRIFT) {
+			reset_x_drift_comp();
+		} else if (command == CMD_SAVE_DRIFT) {
+			save_x_drift_comp();
+		}
 	}
 }
 
