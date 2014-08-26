@@ -123,11 +123,11 @@ __code const uint8_t joystick_hid_report_descriptor[JOYSTICK_HID_REPORT_DESC_SIZ
 
 	0x06, 0x00, 0xFF,							//     Usage Page (Vendor Usage 0xFF00)
 	0x09, 0x01,									//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x01)
-	0x85, RF_STATUS_REPORT_ID,					//     Report ID
+	0x85, STATUS_REPORT_ID,						//     Report ID
 	0x15, 0x00,									//     Logical Minimum (0)
 	0x26, 0xFF, 0x00,							//     Logical Maximum (255)
 	0x75, 0x08,									//     Report Size (8)
-	0x95, sizeof(FeatRep_RFStatus)-1,			//     Report Count (number of bytes not including the reportID)
+	0x95, sizeof(FeatRep_Status)-1,				//     Report Count (number of bytes not including the reportID)
 	0x09, 0x00,									//     Usage (Usage Page=Vendor Usage 0xFF00 ID=0x00)
 	0xB2, 0x02, 0x01,							//     Feature (Data,Variable,Absolute,No wrap,Linear,Preferred State,No Null position,Non Volatile,Buffered Bytes)
 
@@ -142,18 +142,18 @@ __code const uint8_t usb_string_desc_0[] = {0x04, 0x03, 0x09, 0x04};
 
 __code const uint16_t usb_string_desc_1[] =
 {
-	0x0300 | 0x1A,		// string descriptor ID and length
+	0x0300 | sizeof(usb_string_desc_1),		// string descriptor ID and length
 	'F','e','r','e','n','c',' ','S','z','i','l','i'
 };
 
 __code const uint16_t usb_string_desc_2[] =
 {
-	0x0300 | 0x26,		// string descriptor ID and length
-	'E','D','T','r','a','c','k','e','r',' ','W','i','r','e','l','e','s','s'
+	0x0300 | sizeof(usb_string_desc_2),		// string descriptor ID and length
+	'W','i','r','e','l','e','s','s',' ','H','e','a','d',' ','T','r','a','c','k','e','r'
 };
 
 __code const uint16_t usb_string_desc_3[] =
 {
-	0x0300 | 0x16,		// string descriptor ID and length
+	0x0300 | sizeof(usb_string_desc_3),		// string descriptor ID and length
 	'2','0','1','4','-','0','7','-','0','6'
 };

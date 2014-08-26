@@ -18,6 +18,8 @@
 // 
 // ED Tracker can be found here: http://edtracker.org.uk/
 
+#define APPLY_DRIFT_COMP_PACKETS	5
+
 int16_t driftSamples = -2;
 float lastX = 0, dX = 0, dY, dZ;
 float lX = 0.0;
@@ -30,12 +32,6 @@ int16_t sampleCount = 0;
 uint8_t pckt_cnt = 0;
 bool pc_recenter = false;
 
-void reset_x_drift_comp(void)
-{
-	driftSamples = -2;
-	dX = 0;
-}
-
 void save_x_drift_comp(void)
 {
 	// get the current settings
@@ -43,14 +39,17 @@ void save_x_drift_comp(void)
 	memcpy(&new_settings, get_settings(), sizeof(FeatRep_DongleSettings));
 	
 	// set the new value
-	new_settings.x_drift_comp = get_curr_x_drift_comp();
+	new_settings.x_drift_comp += get_curr_x_drift_comp();
 	
 	save_settings(&new_settings);
 }
 
 float get_curr_x_drift_comp(void)
 {
-	return dX / (float)driftSamples;
+	if (driftSamples > 0)
+		return dX / (float)driftSamples;
+		
+	return 0;
 }
 
 void recenter(void)
@@ -138,12 +137,14 @@ bool process_packet(mpu_packet_t* pckt)
 	}
 
 	// has the user pressed the recenter button on the tracker?
-	if (pckt->flags & FLAG_RECENTER)
+	if ((pckt->flags & FLAG_RECENTER)  ||  pc_recenter)
 	{
 		sampleCount = 0;
 		cx = cy = cz = 0.0;
 		calibrated = false;
 
+		pc_recenter = false;
+		
 		return false;
 	}
 
@@ -215,10 +216,10 @@ bool process_packet(mpu_packet_t* pckt)
 		}
 	}
 
-	// Apply X axis drift compensation every 5th packet
-	if (++pckt_cnt == 5)
+	// Apply X axis drift compensation every APPLY_DRIFT_COMP_PACKETS packets
+	if (++pckt_cnt == APPLY_DRIFT_COMP_PACKETS)
 	{
-		cx += pSettings->x_drift_comp;	// depending on your mounting
+		cx += pSettings->x_drift_comp;
 
 		if (cx > 65536.0)
 			cx -= 65536.0;

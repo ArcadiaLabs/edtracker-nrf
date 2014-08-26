@@ -23,7 +23,8 @@ typedef struct
 
 } hid_joystick_report_t;
 
-extern hid_joystick_report_t	usb_joystick_report;	// the HID keyboard report
+// the HID keyboard report
+extern hid_joystick_report_t	usb_joystick_report;
 
 void reset_joystick_report(void);
 
@@ -58,7 +59,7 @@ typedef struct
 // *****************************************************************
 // *****************************************************************
 
-#define COMMAND_REPORT_ID			3
+#define COMMAND_REPORT_ID		3
 
 enum head_tracker_commands_t
 {
@@ -68,8 +69,7 @@ enum head_tracker_commands_t
 	
 	// these are send from the PC to the dongle
 	CMD_RECENTER			= 3,
-	CMD_RESET_DRIFT			= 4,
-	CMD_SAVE_DRIFT			= 5,
+	CMD_SAVE_DRIFT			= 4,
 };
 
 // direction: PC -> dongle
@@ -102,15 +102,20 @@ typedef struct
 // *****************************************************************
 // *****************************************************************
 
-#define RF_STATUS_REPORT_ID				5
+#define STATUS_REPORT_ID				5
 
 // direction: dongle -> PC
 typedef struct
 {
-	uint8_t		report_id;		// RF_STATUS_REPORT_ID
+	uint8_t		report_id;		// STATUS_REPORT_ID
 
 	uint8_t		num_packets;	// number of packets received in the last second
-} FeatRep_RFStatus;
+	
+	float		new_drift_comp;	// the calculated drift compensation
+	int16_t		driftSamples;
+	float		dX;
+
+} FeatRep_Status;
 
 #ifdef _MSC_VER
 # pragma pack(pop)

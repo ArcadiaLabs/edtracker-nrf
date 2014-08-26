@@ -158,13 +158,14 @@ void WHTDialog::OnCommand(int ctrl_id)
 		}
 
 	} else if (ctrl_id == IDC_BTN_READ_CALIBRATION) {
+
 		ReadCalibrationData();
 
 	} else if (ctrl_id == IDC_BTN_RESET_DRIFT_COMP) {
 		
 		FeatRep_Command rep;
 		rep.report_id = COMMAND_REPORT_ID;
-		rep.command = CMD_RESET_DRIFT;
+		rep.command = CMD_RECENTER;
 		device.SetFeatureReport(rep);
 
 	} else if (ctrl_id == IDC_BTN_SAVE_DRIFT_COMP) {
@@ -173,6 +174,13 @@ void WHTDialog::OnCommand(int ctrl_id)
 		rep.report_id = COMMAND_REPORT_ID;
 		rep.command = CMD_SAVE_DRIFT;
 		device.SetFeatureReport(rep);
+
+		// read the drift compensation value back
+		FeatRep_DongleSettings repSettings;
+		repSettings.report_id = DONGLE_SETTINGS_REPORT_ID;
+		device.GetFeatureReport(repSettings);
+
+		SetCtrlText(IDC_LBL_APPLIED_DRIFT_COMP, flt2str(repSettings.x_drift_comp));
 	}
 }
 
@@ -189,18 +197,21 @@ void WHTDialog::OnTimer()
 		SendMessage(GetCtrl(IDC_PRG_AXIS_Y), PBM_SETPOS, (WPARAM) rep.y + 0x8000, 0);
 		SendMessage(GetCtrl(IDC_PRG_AXIS_Z), PBM_SETPOS, (WPARAM) rep.z + 0x8000, 0);
 
-		// get the RF state
-		FeatRep_RFStatus repRF;
-		repRF.report_id = RF_STATUS_REPORT_ID;
-		device.GetFeatureReport(repRF);
+		// get the current status
+		FeatRep_Status repStatus;
+		repStatus.report_id = STATUS_REPORT_ID;
+		device.GetFeatureReport(repStatus);
 
 		std::wstring res;
-		if (repRF.num_packets >= 48)
+		if (repStatus.num_packets >= 48)
 			res = L"100";
 		else
-			res = int2str(repRF.num_packets * 2);
+			res = int2str(repStatus.num_packets * 2);
 
 		SetStatusbarText(STATBAR_RF_STATUS, L"RF packets: " + res + L"%");
+
+		SetCtrlText(IDC_LBL_NEW_DRIFT_COMP, flt2str(repStatus.new_drift_comp));
+		SetCtrlText(IDC_LBL_PACKETS_SUM, int2str(repStatus.driftSamples) + L" / " + flt2str(repStatus.dX));
 
 	} else {
 
@@ -304,7 +315,7 @@ void WHTDialog::ReadConfigFromDevice()
 
 	SetCheckState(IDC_CHK_SELFCENTER, rep.is_selfcenter != 0);
 
-	SetCtrlText(IDC_EDT_APPLIED_DRIFT_COMP, flt2str(rep.x_drift_comp));
+	SetCtrlText(IDC_LBL_APPLIED_DRIFT_COMP, flt2str(rep.x_drift_comp));
 
 	SetCtrlText(IDC_EDT_LIN_FACT_X, flt2str(rep.lin_fact_x));
 	SetCtrlText(IDC_EDT_LIN_FACT_Y, flt2str(rep.lin_fact_y));
@@ -319,13 +330,13 @@ void WHTDialog::ReadCalibrationData()
 {
 	debug(L"reading FeatRep_CalibrationData");
 
-	ClearCtrlText(IDC_CALIB_STATUS);
-	ClearCtrlText(IDC_GYRO_BIAS_X);
-	ClearCtrlText(IDC_GYRO_BIAS_Y);
-	ClearCtrlText(IDC_GYRO_BIAS_Z);
-	ClearCtrlText(IDC_ACCEL_BIAS_X);
-	ClearCtrlText(IDC_ACCEL_BIAS_Y);
-	ClearCtrlText(IDC_ACCEL_BIAS_Z);
+	ClearCtrlText(IDC_LBL_CALIB_STATUS);
+	ClearCtrlText(IDC_LBL_GYRO_BIAS_X);
+	ClearCtrlText(IDC_LBL_GYRO_BIAS_Y);
+	ClearCtrlText(IDC_LBL_GYRO_BIAS_Z);
+	ClearCtrlText(IDC_LBL_ACCEL_BIAS_X);
+	ClearCtrlText(IDC_LBL_ACCEL_BIAS_Y);
+	ClearCtrlText(IDC_LBL_ACCEL_BIAS_Z);
 
 	FeatRep_CalibrationData rep;
 	rep.report_id = CALIBRATION_DATA_REPORT_ID;
@@ -333,17 +344,17 @@ void WHTDialog::ReadCalibrationData()
 
 	if (rep.has_tracker_responded == 0)
 	{
-		SetCtrlText(IDC_CALIB_STATUS, L"Tracker not found");
+		SetCtrlText(IDC_LBL_CALIB_STATUS, L"Tracker not found");
 	} else {
-		SetCtrlText(IDC_CALIB_STATUS, rep.is_calibrated ? L"Calibrated" : L"Not calibrated");
+		SetCtrlText(IDC_LBL_CALIB_STATUS, rep.is_calibrated ? L"Calibrated" : L"Not calibrated");
 
-		SetCtrlText(IDC_GYRO_BIAS_X, int2str(rep.gyro_bias[0]));
-		SetCtrlText(IDC_GYRO_BIAS_Y, int2str(rep.gyro_bias[1]));
-		SetCtrlText(IDC_GYRO_BIAS_Z, int2str(rep.gyro_bias[2]));
+		SetCtrlText(IDC_LBL_GYRO_BIAS_X, int2str(rep.gyro_bias[0]));
+		SetCtrlText(IDC_LBL_GYRO_BIAS_Y, int2str(rep.gyro_bias[1]));
+		SetCtrlText(IDC_LBL_GYRO_BIAS_Z, int2str(rep.gyro_bias[2]));
 
-		SetCtrlText(IDC_ACCEL_BIAS_X, int2str(rep.accel_bias[0]));
-		SetCtrlText(IDC_ACCEL_BIAS_Y, int2str(rep.accel_bias[1]));
-		SetCtrlText(IDC_ACCEL_BIAS_Z, int2str(rep.accel_bias[2]));
+		SetCtrlText(IDC_LBL_ACCEL_BIAS_X, int2str(rep.accel_bias[0]));
+		SetCtrlText(IDC_LBL_ACCEL_BIAS_Y, int2str(rep.accel_bias[1]));
+		SetCtrlText(IDC_LBL_ACCEL_BIAS_Z, int2str(rep.accel_bias[2]));
 	}
 }
 
@@ -356,7 +367,7 @@ void WHTDialog::SendConfigToDevice()
 	rep.is_linear = GetComboSelection(IDC_CMB_AXIS_RESPONSE) == 1 ? 1 : 0;
 	rep.is_selfcenter = GetCheckState(IDC_CHK_SELFCENTER) ? 1 : 0;
 
-	rep.x_drift_comp = GetCtrlTextFloat(IDC_EDT_APPLIED_DRIFT_COMP);
+	//rep.x_drift_comp = GetCtrlTextFloat(IDC_EDT_APPLIED_DRIFT_COMP);
 
 	rep.lin_fact_x = GetCtrlTextFloat(IDC_EDT_LIN_FACT_X);
 	rep.lin_fact_y = GetCtrlTextFloat(IDC_EDT_LIN_FACT_Y);
@@ -377,8 +388,6 @@ void WHTDialog::ChangeConnectedStateUI(bool is_connected)
 	EnableWindow(GetCtrl(IDC_BTN_READ_CALIBRATION), is_connected ? TRUE : FALSE);
 	EnableWindow(GetCtrl(IDC_BTN_CALIBRATE), is_connected ? TRUE : FALSE);
 	EnableWindow(GetCtrl(IDC_BTN_SEND_TO_TRACKER), is_connected ? TRUE : FALSE);
-	EnableWindow(GetCtrl(IDC_EDT_APPLIED_DRIFT_COMP), is_connected ? TRUE : FALSE);
-	EnableWindow(GetCtrl(IDC_EDT_NEW_DRIFT_COMP), is_connected ? TRUE : FALSE);
 	EnableWindow(GetCtrl(IDC_BTN_RESET_DRIFT_COMP), is_connected ? TRUE : FALSE);
 	EnableWindow(GetCtrl(IDC_BTN_SAVE_DRIFT_COMP), is_connected ? TRUE : FALSE);
 	EnableWindow(GetCtrl(IDC_CMB_AXIS_RESPONSE), is_connected ? TRUE : FALSE);
