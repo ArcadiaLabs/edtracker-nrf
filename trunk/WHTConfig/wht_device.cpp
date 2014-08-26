@@ -105,23 +105,28 @@ void WHTDevice::Close()
 	hDevice = NULL;
 }
 
-bool WHTDevice::GetFeatureReportRaw(uint8_t* buffer, int report_size)
+void WHTDevice::ThrowException(const wchar_t* during, int report_id)
 {
-	if (HidD_GetFeature(hDevice, buffer, report_size) == FALSE)
-	{
-		debug(GetLastError());
-		return false;
-	}
-
-	return true;
+	int last_error = GetLastError();
+	std::wstring msg(during);
+	msg += L" failed!\nPlease check if the dongle is connected.\nReport ID = " + int2str(report_id) + L"\nGetLastError() = " + int2str(last_error);
+	throw msg;
 }
 
-bool WHTDevice::SetFeatureReportRaw(const uint8_t* buffer, int report_size)
+void WHTDevice::GetFeatureReportRaw(uint8_t* buffer, int report_size)
 {
-	return HidD_SetFeature(hDevice, (PVOID) buffer, report_size) == TRUE;
+	if (HidD_GetFeature(hDevice, buffer, report_size) != TRUE)
+		ThrowException(L"HidD_GetFeature", buffer[0]);
 }
 
-bool WHTDevice::GetInputReportRaw(uint8_t* buffer, int report_size)
+void WHTDevice::SetFeatureReportRaw(const uint8_t* buffer, int report_size)
 {
-	return HidD_GetInputReport(hDevice, (PVOID) buffer, report_size) == TRUE;
+	if (HidD_SetFeature(hDevice, (PVOID) buffer, report_size) != TRUE)
+		ThrowException(L"HidD_SetFeature", buffer[0]);
+}
+
+void WHTDevice::GetInputReportRaw(uint8_t* buffer, int report_size)
+{
+	if (HidD_GetInputReport(hDevice, buffer, report_size) != TRUE)
+		ThrowException(L"HidD_GetInputReport", buffer[0]);
 }

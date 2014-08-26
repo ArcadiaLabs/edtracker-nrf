@@ -33,10 +33,19 @@ private:
 
 	float GetCtrlTextFloat(int ctrl_id);
 
-	void SetRadioState(int ctrl_id, bool new_state);
-	bool GetRadioState(int ctrl_id)
+	void AddComboString(int ctrl_id, const wchar_t* str)
 	{
-		return SendMessage(GetDlgItem(hDialog, ctrl_id), BM_GETCHECK, 0, 0) == BST_CHECKED;
+		SendMessage(GetCtrl(ctrl_id), CB_ADDSTRING, 0, (LPARAM) str);
+	}
+
+	void SetComboSelection(int ctrl_id, int selection)
+	{
+		SendMessage(GetCtrl(ctrl_id), CB_SETCURSEL, 0, (LPARAM) selection);
+	}
+
+	int GetComboSelection(int ctrl_id)
+	{
+		return SendMessage(GetCtrl(ctrl_id), CB_GETCURSEL, 0, 0);
 	}
 
 	void SetCheckState(int ctrl_id, bool new_state)
@@ -52,6 +61,7 @@ private:
 	void CreateTrayIcon();
 	void RemoveTrayIcon();
 
+	BOOL OnMessage(int message, WPARAM wParam, LPARAM lParam);
 	void OnCommand(int ctrl_id);
 	void OnTimer();
 	void OnTrayNotify(LPARAM lParam);

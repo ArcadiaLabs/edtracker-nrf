@@ -28,6 +28,13 @@ float cx, cy, cz = 0.0;
 bool calibrated = false;
 int16_t sampleCount = 0;
 uint8_t pckt_cnt = 0;
+bool pc_recenter = false;
+
+void reset_x_drift_comp(void)
+{
+	driftSamples = -2;
+	dX = 0;
+}
 
 void save_x_drift_comp(void)
 {
@@ -44,6 +51,11 @@ void save_x_drift_comp(void)
 float get_curr_x_drift_comp(void)
 {
 	return dX / (float)driftSamples;
+}
+
+void recenter(void)
+{
+	pc_recenter = true;
 }
 
 float constrain_flt(float val)
@@ -82,7 +94,7 @@ bool process_packet(mpu_packet_t* pckt)
 	qy = (float)(pckt->quat[2]) / 16384.0f;
 	qz = (float)(pckt->quat[3]) / 16384.0f;
 
-	// Calculate Yaw/Pitch/Roll
+	// calculate Yaw/Pitch/Roll
 
 	qww = qw * qw;
 	qxx = qx * qx;
@@ -104,7 +116,8 @@ bool process_packet(mpu_packet_t* pckt)
 	if (!calibrated)
 	{
 		if (sampleCount < recalibrateSamples)
-		{ // accumulate samples
+		{
+			// accumulate samples
 			cx += newX;
 			cy += newY;
 			cz += newZ;
@@ -140,8 +153,7 @@ bool process_packet(mpu_packet_t* pckt)
 	// this should take us back to zero BUT we may have wrapped so ..
 	if (newX < -32768.0)
 		newX += 65536.0;
-
-	if (newX > 32768.0)
+	else if (newX > 32768.0)
 		newX -= 65536.0;
 
 	newY = newY - cy;
