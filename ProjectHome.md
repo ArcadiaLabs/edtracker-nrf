@@ -1,0 +1,1 @@
+This is a wireless version of the EDTracker head tracking project. Instead of Arduino, it uses Nordic nRF wireless chips.
